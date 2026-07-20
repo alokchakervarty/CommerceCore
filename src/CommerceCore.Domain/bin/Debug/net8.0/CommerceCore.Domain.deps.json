@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "CommerceCore.Domain/1.0.0": {
+        "dependencies": {
+          "CommerceCore.Shared": "1.0.0"
+        },
+        "runtime": {
+          "CommerceCore.Domain.dll": {}
+        }
+      },
+      "CommerceCore.Shared/1.0.0": {
+        "runtime": {
+          "CommerceCore.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "CommerceCore.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "CommerceCore.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
