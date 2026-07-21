@@ -134,7 +134,7 @@ try
     // ---------- Health checks ----------
     builder.Services.AddHealthChecks()
         .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgresql");
-
+    
     var app = builder.Build();
 
     // ---------- Apply pending migrations automatically on startup (dev convenience;
