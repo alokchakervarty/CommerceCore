@@ -46,6 +46,22 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("otp/request")]
+    [ProducesResponseType(typeof(OtpRequestedResponse), 200)]
+    public async Task<ActionResult<OtpRequestedResponse>> RequestOtp(RequestOtpRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new RequestOtpCommand(request.Identifier, request.Channel), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("otp/login")]
+    [ProducesResponseType(typeof(AuthResponse), 200)]
+    public async Task<ActionResult<AuthResponse>> LoginWithOtp(LoginWithOtpRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new LoginWithOtpCommand(request.Identifier, request.Channel, request.Code), cancellationToken);
+        return Ok(result);
+    }
+
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(RefreshTokenRequest request, CancellationToken cancellationToken)

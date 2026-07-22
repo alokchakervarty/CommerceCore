@@ -24,6 +24,7 @@ public interface IApplicationDbContext
 
     DbSet<User> Users { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<OtpCode> OtpCodes { get; }
     DbSet<Role> Roles { get; }
     DbSet<Permission> Permissions { get; }
     DbSet<UserRole> UserRoles { get; }

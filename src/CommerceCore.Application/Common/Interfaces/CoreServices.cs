@@ -35,3 +35,19 @@ public interface ITokenService
     string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles, out DateTime expiresAt);
     string GenerateRefreshToken();
 }
+
+/// <summary>Sends an email using the target Store's SMTP configuration
+/// (StoreSettings.SmtpHost/Port/credentials). Implemented in Infrastructure.</summary>
+public interface IEmailSender
+{
+    Task SendAsync(Guid storeId, string toAddress, string subject, string htmlBody, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Sends an SMS. The default Infrastructure implementation logs the message
+/// rather than calling a real carrier — no SMS provider (Twilio, etc.) is configured
+/// out of the box. Swap in a real provider by implementing this interface and
+/// re-registering it in Infrastructure's DependencyInjection.</summary>
+public interface ISmsSender
+{
+    Task SendAsync(string toPhoneNumber, string message, CancellationToken cancellationToken = default);
+}

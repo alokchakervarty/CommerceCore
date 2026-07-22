@@ -126,3 +126,26 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.Ignore(rt => rt.IsActive);
     }
 }
+
+public class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
+{
+    public void Configure(EntityTypeBuilder<OtpCode> builder)
+    {
+        builder.ToTable("OtpCodes");
+        builder.HasKey(o => o.Id);
+
+        builder.Property(o => o.Channel).HasConversion<string>().HasMaxLength(20);
+        builder.Property(o => o.Identifier).HasMaxLength(255).IsRequired();
+        builder.Property(o => o.CodeHash).HasMaxLength(255).IsRequired();
+        builder.Property(o => o.Purpose).HasConversion<string>().HasMaxLength(30);
+        builder.Property(o => o.Version).IsConcurrencyToken();
+
+        // Fast lookup for both rate-limiting ("is there already an active code for
+        // this identifier+purpose?") and verification.
+        builder.HasIndex(o => new { o.StoreId, o.Identifier, o.Purpose, o.CreatedDate });
+
+        builder.Ignore(o => o.IsExpired);
+        builder.Ignore(o => o.IsVerified);
+        builder.Ignore(o => o.IsUsable);
+    }
+}

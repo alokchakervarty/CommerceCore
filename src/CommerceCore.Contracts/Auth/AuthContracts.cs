@@ -11,6 +11,12 @@ public record LoginRequest(string Email, string Password);
 
 public record RefreshTokenRequest(string AccessToken, string RefreshToken);
 
+public record RequestOtpRequest(string Identifier, string Channel); // Channel: "Email" or "Sms"
+
+public record LoginWithOtpRequest(string Identifier, string Channel, string Code);
+
+public record OtpRequestedResponse(string Message, DateTime ExpiresAt);
+
 public record AuthResponse(
     Guid UserId,
     string FirstName,
