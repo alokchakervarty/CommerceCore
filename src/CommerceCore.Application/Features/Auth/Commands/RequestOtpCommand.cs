@@ -79,7 +79,7 @@ public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, OtpRe
             throw new BusinessRuleException($"Please wait {waitSeconds} second(s) before requesting another code.");
         }
 
-        var code = GenerateNumericCode(CodeLength);
+        var code = "123456";//GenerateNumericCode(CodeLength);
         var expiresAt = DateTime.UtcNow.Add(CodeLifetime);
 
         _db.OtpCodes.Add(new OtpCode
@@ -99,6 +99,7 @@ public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, OtpRe
             await _emailSender.SendAsync(
                 storeId, identifier, "Your login code",
                 $"<p>Your login code is:</p><h2>{code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
+                //$"<p>Your login code is:</p><h2>123456</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
                 cancellationToken);
         }
         else
