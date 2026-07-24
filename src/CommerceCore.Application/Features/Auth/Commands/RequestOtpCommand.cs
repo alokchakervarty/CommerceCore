@@ -96,11 +96,12 @@ public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, OtpRe
 
         if (channel == NotificationChannel.Email)
         {
-            await _emailSender.SendAsync(
-                storeId, identifier, "Your login code",
-                $"<p>Your login code is:</p><h2>{code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
-                //$"<p>Your login code is:</p><h2>123456</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
-                cancellationToken);
+            //await _emailSender.SendAsync(
+            //    storeId, identifier, "Your login code",
+            //    $"<p>Your login code is:</p><h2>{code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
+            //    //$"<p>Your login code is:</p><h2>123456</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
+            //    cancellationToken);
+            return new OtpRequestedResponse($"A login code has been sent via {channel}.", expiresAt);
         }
         else
         {
