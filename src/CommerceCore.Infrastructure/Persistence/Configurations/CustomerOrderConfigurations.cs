@@ -68,7 +68,17 @@ public class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
         builder.HasKey(ci => ci.Id);
         builder.Property(ci => ci.Version).IsConcurrencyToken();
 
-        builder.HasIndex(ci => new { ci.CustomerId, ci.ProductVariantId }).IsUnique();
+        // Two separate partial-style unique indexes rather than one compound index,
+        // since a compound unique index on a nullable column would let multiple guest
+        // rows (CustomerId = null) for the same variant slip through — Postgres treats
+        // NULL as distinct from every other NULL in uniqueness checks.
+        builder.HasIndex(ci => new { ci.CustomerId, ci.ProductVariantId })
+            .IsUnique()
+            .HasFilter("\"CustomerId\" IS NOT NULL");
+
+        builder.HasIndex(ci => new { ci.GuestId, ci.ProductVariantId })
+            .IsUnique()
+            .HasFilter("\"GuestId\" IS NOT NULL");
 
         builder.HasOne(ci => ci.Customer)
             .WithMany()
@@ -84,6 +94,11 @@ public class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
             .WithMany()
             .HasForeignKey(ci => ci.ProductVariantId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Exactly one of CustomerId / GuestId must be set.
+        builder.ToTable(t => t.HasCheckConstraint(
+            "CK_CartItem_ExactlyOneOwner",
+            "(\"CustomerId\" IS NOT NULL AND \"GuestId\" IS NULL) OR (\"CustomerId\" IS NULL AND \"GuestId\" IS NOT NULL)"));
     }
 }
 

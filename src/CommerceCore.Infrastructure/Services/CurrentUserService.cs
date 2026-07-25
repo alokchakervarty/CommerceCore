@@ -34,4 +34,13 @@ public class CurrentUserService : ICurrentUserService
         Principal?.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList() ?? new List<string>();
 
     public bool IsInRole(string role) => Principal?.IsInRole(role) ?? false;
+
+    public Guid? GuestId
+    {
+        get
+        {
+            var headerValue = _httpContextAccessor.HttpContext?.Request.Headers["X-Guest-Id"].FirstOrDefault();
+            return Guid.TryParse(headerValue, out var guestId) ? guestId : null;
+        }
+    }
 }

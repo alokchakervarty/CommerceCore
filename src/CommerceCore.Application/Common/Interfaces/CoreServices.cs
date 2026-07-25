@@ -9,6 +9,11 @@ public interface ICurrentUserService
     bool IsAuthenticated { get; }
     IReadOnlyList<string> Roles { get; }
     bool IsInRole(string role);
+
+    /// <summary>The client-generated anonymous-cart identifier from the X-Guest-Id
+    /// header, if the caller sent one. Used to build/hold a cart before login —
+    /// see GuestCartMerger for how it's folded into the Customer's cart on login.</summary>
+    Guid? GuestId { get; }
 }
 
 /// <summary>Resolves which Store the current request belongs to (from a subdomain,

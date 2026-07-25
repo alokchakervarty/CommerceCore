@@ -59,7 +59,7 @@ try
         {
             Title = "CommerceCore API",
             Version = "v1",
-            Description = "A reusable, headless e-commerce backend. Every request (except /auth and health checks) requires an 'X-Store-Id' header identifying the tenant store."
+            Description = "A reusable, headless e-commerce backend. Every request (except health checks) requires an 'X-Store-Id' header identifying the tenant store. Cart endpoints also accept an 'X-Guest-Id' header (a client-generated GUID) so a cart can be built before logging in — login is only required at checkout."
         });
 
         options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -86,6 +86,18 @@ try
         options.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
             { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "StoreId" } }, Array.Empty<string>() }
+        });
+
+        options.AddSecurityDefinition("GuestId", new OpenApiSecurityScheme
+        {
+            Name = "X-Guest-Id",
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Header,
+            Description = "Optional. A client-generated GUID identifying an anonymous cart — only used by /cart endpoints when not logged in. Omit once authenticated."
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "GuestId" } }, Array.Empty<string>() }
         });
     });
 
@@ -134,7 +146,7 @@ try
     // ---------- Health checks ----------
     builder.Services.AddHealthChecks()
         .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgresql");
-    
+
     var app = builder.Build();
 
     // ---------- Apply pending migrations automatically on startup (dev convenience;
@@ -150,10 +162,11 @@ try
     // ---------- Middleware pipeline ----------
     app.UseGlobalExceptionHandling();
 
-   
+    //if (app.Environment.IsDevelopment())
+    //{
         app.UseSwagger();
         app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CommerceCore API v1"));
-    
+    //}
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();

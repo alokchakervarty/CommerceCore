@@ -1,4 +1,5 @@
 using CommerceCore.Application.Common.Interfaces;
+using CommerceCore.Application.Features.Cart;
 using CommerceCore.Contracts.Auth;
 using CommerceCore.Domain.Entities.Identity;
 using CommerceCore.Shared.Exceptions;
@@ -31,17 +32,20 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthResponse>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _currentUser;
     private readonly ICurrentTenantService _tenant;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
 
     public RegisterCommandHandler(
         IApplicationDbContext db,
+        ICurrentUserService currentUser,
         ICurrentTenantService tenant,
         IPasswordHasher passwordHasher,
         ITokenService tokenService)
     {
         _db = db;
+        _currentUser = currentUser;
         _tenant = tenant;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
@@ -91,6 +95,11 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         });
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Fold any items added to a guest cart (X-Guest-Id header) before signing up
+        // into this brand-new account's cart, so nothing gets lost.
+        var customer = await CustomerResolver.GetOrCreateForUserAsync(_db, _tenant, user, cancellationToken);
+        await GuestCartMerger.MergeIfPresentAsync(_db, _currentUser, _tenant, customer.Id, cancellationToken);
 
         return new AuthResponse(
             user.Id,

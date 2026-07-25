@@ -43,7 +43,10 @@ public class SmtpEmailSender : IEmailSender
         {
             EnableSsl = true,
             //Credentials = new NetworkCredential("alokchakarverty002@gmail.com","jwzwnhfnieqymfkd")
-            Credentials = new NetworkCredential(settings.SmtpUsernameEncrypted, settings.SmtpPasswordEncrypted)
+            UseDefaultCredentials = false,
+            Credentials = new NetworkCredential("b2c580001@smtp-brevo.com", "690d737767d5dbfd4e580c6c06632f208627d74dd71d2931d45444afae14afc2-ZMkPRj3kZsZNlq7r")
+            
+            //Credentials = new NetworkCredential(settings.SmtpUsernameEncrypted, settings.SmtpPasswordEncrypted)
         };
 
         using var message = new MailMessage

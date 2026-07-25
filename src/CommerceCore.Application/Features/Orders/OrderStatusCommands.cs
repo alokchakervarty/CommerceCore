@@ -86,7 +86,7 @@ public class UpdateOrderStatusCommandHandler : IRequestHandler<UpdateOrderStatus
             order.DeliveredAt = DateTime.UtcNow;
 
         order.Status = newStatus;
-        //order.UpdatedAt = DateTime.UtcNow;
+        order.ModifiedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
         return OrderMapper.ToDto(order);
@@ -144,7 +144,7 @@ public class CancelOrderCommandHandler : IRequestHandler<CancelOrderCommand, Ord
 
         order.Status = OrderStatus.Cancelled;
         order.CancelledAt = DateTime.UtcNow;
-        //order.UpdatedAt = DateTime.UtcNow;
+        order.ModifiedDate = DateTime.UtcNow;
 
         if (order.Customer != null)
         {

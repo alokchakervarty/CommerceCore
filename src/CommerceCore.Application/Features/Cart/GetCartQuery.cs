@@ -21,7 +21,7 @@ public class GetCartQueryHandler : IRequestHandler<GetCartQuery, CartResponse>
 
     public async Task<CartResponse> Handle(GetCartQuery request, CancellationToken cancellationToken)
     {
-        var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
-        return await CartMapper.ToResponseAsync(_db, customer.Id, cancellationToken);
+        var owner = await CartOwnerResolver.ResolveAsync(_db, _currentUser, _tenant, cancellationToken);
+        return await CartMapper.ToResponseAsync(_db, owner, cancellationToken);
     }
 }

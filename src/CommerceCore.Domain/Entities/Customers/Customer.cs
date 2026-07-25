@@ -41,5 +41,11 @@ public class Customer : BaseEntity, IStoreScoped
 
     public ICollection<Address> Addresses { get; set; } = new List<Address>();
     public ICollection<Order> Orders { get; set; } = new List<Order>();
-    public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+    // No CartItems collection here on purpose: CartItem.CustomerId is nullable
+    // (guest carts use GuestId instead), and CartItemConfiguration wires that
+    // relationship as HasOne(...).WithMany() — no inverse collection. Adding one
+    // back here without also updating that WithMany() call to WithMany(c =>
+    // c.CartItems) causes EF Core to treat it as a second, separate relationship
+    // and invent a phantom shadow FK column ("CustomerId1") for it. Query a
+    // customer's cart via db.CartItems.Where(...) instead (see CartMapper).
 }

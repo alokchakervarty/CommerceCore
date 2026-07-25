@@ -8,6 +8,39 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CommerceCore.Application.Features.Cart;
 
+/// <summary>Identifies who a cart belongs to: exactly one of CustomerId (logged in)
+/// or GuestId (anonymous, from the X-Guest-Id header) is set.</summary>
+internal readonly record struct CartOwner(Guid? CustomerId, Guid? GuestId);
+
+/// <summary>
+/// Resolves the current caller's cart owner without requiring login: an
+/// authenticated caller resolves to their Customer as before; an anonymous caller
+/// resolves to their X-Guest-Id instead, so a shopper can build a cart before ever
+/// logging in. Checkout (a separate, still-[Authorize]-protected endpoint) is the
+/// point where a login is actually required — see GuestCartMerger for what happens
+/// to a guest cart the moment they do log in.
+/// </summary>
+internal static class CartOwnerResolver
+{
+    public static async Task<CartOwner> ResolveAsync(
+        IApplicationDbContext db, ICurrentUserService currentUser, ICurrentTenantService tenant, CancellationToken cancellationToken)
+    {
+        if (currentUser.IsAuthenticated && currentUser.UserId != null)
+        {
+            var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(db, currentUser, tenant, cancellationToken);
+            return new CartOwner(customer.Id, null);
+        }
+
+        if (currentUser.GuestId is { } guestId)
+            return new CartOwner(null, guestId);
+
+        throw new ValidationAppException(new Dictionary<string, string[]>
+        {
+            ["X-Guest-Id"] = new[] { "Log in, or send an X-Guest-Id header (a client-generated GUID) to use a cart without logging in." }
+        });
+    }
+}
+
 public record AddToCartCommand(Guid ProductVariantId, int Quantity) : IRequest<CartResponse>;
 
 public class AddToCartCommandValidator : AbstractValidator<AddToCartCommand>
@@ -34,7 +67,7 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, CartRes
 
     public async Task<CartResponse> Handle(AddToCartCommand request, CancellationToken cancellationToken)
     {
-        var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
+        var owner = await CartOwnerResolver.ResolveAsync(_db, _currentUser, _tenant, cancellationToken);
 
         var variant = await _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == request.ProductVariantId, cancellationToken)
             ?? throw new NotFoundException("ProductVariant", request.ProductVariantId);
@@ -47,7 +80,9 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, CartRes
             .SumAsync(i => (int?)(i.QuantityOnHand - i.QuantityReserved), cancellationToken) ?? 0;
 
         var existing = await _db.CartItems.FirstOrDefaultAsync(
-            ci => ci.CustomerId == customer.Id && ci.ProductVariantId == variant.Id, cancellationToken);
+            ci => ci.ProductVariantId == variant.Id
+                && (owner.CustomerId != null ? ci.CustomerId == owner.CustomerId : ci.GuestId == owner.GuestId),
+            cancellationToken);
 
         var requestedTotal = (existing?.Quantity ?? 0) + request.Quantity;
         if (requestedTotal > availableStock)
@@ -61,7 +96,8 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, CartRes
         {
             _db.CartItems.Add(new CartItem
             {
-                CustomerId = customer.Id,
+                CustomerId = owner.CustomerId,
+                GuestId = owner.GuestId,
                 ProductId = variant.ProductId,
                 ProductVariantId = variant.Id,
                 Quantity = request.Quantity
@@ -69,7 +105,7 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, CartRes
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        return await CartMapper.ToResponseAsync(_db, customer.Id, cancellationToken);
+        return await CartMapper.ToResponseAsync(_db, owner, cancellationToken);
     }
 }
 
@@ -98,10 +134,12 @@ public class UpdateCartItemCommandHandler : IRequestHandler<UpdateCartItemComman
 
     public async Task<CartResponse> Handle(UpdateCartItemCommand request, CancellationToken cancellationToken)
     {
-        var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
+        var owner = await CartOwnerResolver.ResolveAsync(_db, _currentUser, _tenant, cancellationToken);
 
         var item = await _db.CartItems.FirstOrDefaultAsync(
-            ci => ci.Id == request.CartItemId && ci.CustomerId == customer.Id, cancellationToken)
+            ci => ci.Id == request.CartItemId
+                && (owner.CustomerId != null ? ci.CustomerId == owner.CustomerId : ci.GuestId == owner.GuestId),
+            cancellationToken)
             ?? throw new NotFoundException("CartItem", request.CartItemId);
 
         var availableStock = await _db.InventoryItems
@@ -114,7 +152,7 @@ public class UpdateCartItemCommandHandler : IRequestHandler<UpdateCartItemComman
         item.Quantity = request.Quantity;
         await _db.SaveChangesAsync(cancellationToken);
 
-        return await CartMapper.ToResponseAsync(_db, customer.Id, cancellationToken);
+        return await CartMapper.ToResponseAsync(_db, owner, cancellationToken);
     }
 }
 
@@ -135,27 +173,29 @@ public class RemoveCartItemCommandHandler : IRequestHandler<RemoveCartItemComman
 
     public async Task<CartResponse> Handle(RemoveCartItemCommand request, CancellationToken cancellationToken)
     {
-        var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
+        var owner = await CartOwnerResolver.ResolveAsync(_db, _currentUser, _tenant, cancellationToken);
 
         var item = await _db.CartItems.FirstOrDefaultAsync(
-            ci => ci.Id == request.CartItemId && ci.CustomerId == customer.Id, cancellationToken)
+            ci => ci.Id == request.CartItemId
+                && (owner.CustomerId != null ? ci.CustomerId == owner.CustomerId : ci.GuestId == owner.GuestId),
+            cancellationToken)
             ?? throw new NotFoundException("CartItem", request.CartItemId);
 
         _db.CartItems.Remove(item);
         await _db.SaveChangesAsync(cancellationToken);
 
-        return await CartMapper.ToResponseAsync(_db, customer.Id, cancellationToken);
+        return await CartMapper.ToResponseAsync(_db, owner, cancellationToken);
     }
 }
 
 internal static class CartMapper
 {
-    public static async Task<CartResponse> ToResponseAsync(IApplicationDbContext db, Guid customerId, CancellationToken cancellationToken)
+    public static async Task<CartResponse> ToResponseAsync(IApplicationDbContext db, CartOwner owner, CancellationToken cancellationToken)
     {
         var rawItems = await db.CartItems
             .Include(ci => ci.Product)
             .Include(ci => ci.ProductVariant)
-            .Where(ci => ci.CustomerId == customerId)
+            .Where(ci => owner.CustomerId != null ? ci.CustomerId == owner.CustomerId : ci.GuestId == owner.GuestId)
             .ToListAsync(cancellationToken);
 
         var variantIds = rawItems.Select(i => i.ProductVariantId).ToList();

@@ -14,7 +14,6 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
-        services.AddAutoMapper(assembly);
 
         // Order matters: unhandled-exception outermost, then logging, then validation
         // closest to the handler so a validation failure is still logged and timed.

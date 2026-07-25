@@ -1,4 +1,5 @@
 using CommerceCore.Application.Common.Interfaces;
+using CommerceCore.Application.Features.Cart;
 using CommerceCore.Contracts.Auth;
 using CommerceCore.Domain.Entities.Identity;
 using CommerceCore.Shared.Exceptions;
@@ -22,17 +23,20 @@ public class LoginCommandValidator : AbstractValidator<LoginCommand>
 public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponse>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _currentUser;
     private readonly ICurrentTenantService _tenant;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
 
     public LoginCommandHandler(
         IApplicationDbContext db,
+        ICurrentUserService currentUser,
         ICurrentTenantService tenant,
         IPasswordHasher passwordHasher,
         ITokenService tokenService)
     {
         _db = db;
+        _currentUser = currentUser;
         _tenant = tenant;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
@@ -76,6 +80,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponse>
         user.AccessFailedCount = 0;
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Fold any items sitting in a guest cart (X-Guest-Id header) into this
+        // account's cart now that we know who they are.
+        var customer = await CustomerResolver.GetOrCreateForUserAsync(_db, _tenant, user, cancellationToken);
+        await GuestCartMerger.MergeIfPresentAsync(_db, _currentUser, _tenant, customer.Id, cancellationToken);
 
         return new AuthResponse(user.Id, user.FirstName, user.LastName, user.Email, roleNames, accessToken, refreshToken, expiresAt);
     }
