@@ -20,7 +20,9 @@ public record CreateProductCommand(
     bool TrackInventory,
     Guid CategoryId,
     Guid? BrandId,
-    IReadOnlyList<string>? ImageUrls) : IRequest<ProductDto>;
+    IReadOnlyList<string>? ImageUrls,
+    int InitialStock = 0,
+    Guid? WarehouseId = null) : IRequest<ProductDto>;
 
 public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
 {
@@ -30,6 +32,7 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
         RuleFor(x => x.BasePrice).GreaterThan(0);
         RuleFor(x => x.CompareAtPrice).GreaterThan(0).When(x => x.CompareAtPrice.HasValue);
         RuleFor(x => x.CategoryId).NotEmpty();
+        RuleFor(x => x.InitialStock).GreaterThanOrEqualTo(0);
     }
 }
 
@@ -112,6 +115,52 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         }
 
         _db.Products.Add(product);
+
+        // Stock is tracked per warehouse. Only bother creating an Inventory row (and
+        // its opening StockMovement) when the product actually tracks inventory —
+        // an untracked product (TrackInventory = false) is always considered
+        // available, so there's nothing meaningful to record.
+        if (request.TrackInventory)
+        {
+            var warehouse = request.WarehouseId is { } warehouseId
+                ? await _db.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId && w.StoreId == storeId, cancellationToken)
+                : await _db.Warehouses.FirstOrDefaultAsync(w => w.StoreId == storeId && w.IsDefault, cancellationToken);
+
+            if (warehouse == null)
+            {
+                var message = request.WarehouseId.HasValue
+                    ? "The specified warehouse does not exist for this store."
+                    : "No default warehouse is configured for this store yet. Create one via POST /api/v1/warehouses (with isDefault: true), or supply a warehouseId on this request.";
+
+                throw new ValidationAppException(new Dictionary<string, string[]>
+                {
+                    [nameof(request.WarehouseId)] = new[] { message }
+                });
+            }
+
+            var inventoryItem = new Domain.Entities.Inventory.InventoryItem
+            {
+                Warehouse = warehouse,
+                ProductVariant = defaultVariant,
+                QuantityOnHand = request.InitialStock,
+                QuantityReserved = 0
+            };
+            _db.InventoryItems.Add(inventoryItem);
+
+            // Recorded even when InitialStock is 0, so the Inventory row exists and
+            // every later stock change has a genuine StockMovement history to build on.
+            _db.StockMovements.Add(new Domain.Entities.Inventory.StockMovement
+            {
+                InventoryItem = inventoryItem,
+                MovementType = Domain.Enums.StockMovementType.InitialStock,
+                QuantityChange = request.InitialStock,
+                QuantityOnHandAfter = request.InitialStock,
+                ReferenceType = "Product",
+                ReferenceId = product.Id,
+                Notes = "Opening stock recorded at product creation."
+            });
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return await ProductMapper.ToDtoAsync(_db, product.Id, cancellationToken)
@@ -178,7 +227,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.IsFeatured = request.IsFeatured;
         product.CategoryId = request.CategoryId;
         product.BrandId = request.BrandId;
-        product.ModifiedDate = DateTime.UtcNow;
+        product.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
 

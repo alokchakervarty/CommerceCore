@@ -38,7 +38,8 @@ public class ProductsController : ControllerBase
         var result = await _mediator.Send(new CreateProductCommand(
             request.Name, request.ShortDescription, request.Description, request.Sku,
             request.BasePrice, request.CompareAtPrice, request.CostPrice, request.TrackInventory,
-            request.CategoryId, request.BrandId, request.ImageUrls), cancellationToken);
+            request.CategoryId, request.BrandId, request.ImageUrls,
+            request.InitialStock, request.WarehouseId), cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id, version = "1.0" }, result);
     }

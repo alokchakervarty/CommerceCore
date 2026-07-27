@@ -67,7 +67,9 @@ public record CreateProductRequest(
     bool TrackInventory,
     Guid CategoryId,
     Guid? BrandId,
-    IReadOnlyList<string>? ImageUrls);
+    IReadOnlyList<string>? ImageUrls,
+    int InitialStock = 0,
+    Guid? WarehouseId = null);
 
 public record UpdateProductRequest(
     string Name,
