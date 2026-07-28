@@ -227,7 +227,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.IsFeatured = request.IsFeatured;
         product.CategoryId = request.CategoryId;
         product.BrandId = request.BrandId;
-        product.UpdatedAt = DateTime.UtcNow;
+        product.ModifiedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
 
