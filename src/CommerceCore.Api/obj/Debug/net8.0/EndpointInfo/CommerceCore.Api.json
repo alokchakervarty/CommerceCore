@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "CommerceCore API",
-    "description": "A reusable, headless e-commerce backend. Every request (except /auth and health checks) requires an 'X-Store-Id' header identifying the tenant store.",
+    "description": "A reusable, headless e-commerce backend. Every request (except health checks) requires an 'X-Store-Id' header identifying the tenant store. Cart endpoints also accept an 'X-Guest-Id' header (a client-generated GUID) so a cart can be built before logging in — login is only required at checkout.",
     "version": "v1"
   },
   "paths": {
@@ -548,6 +548,102 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/otp/request": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestedResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestedResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/otp/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginWithOtpRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginWithOtpRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginWithOtpRequest"
               }
             }
           }
@@ -7818,81 +7914,6 @@
         },
         "additionalProperties": false
       },
-      "CartItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "createdDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "modifiedDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "modifiedBy": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "deletedDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "deletedBy": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "isDeleted": {
-            "type": "boolean"
-          },
-          "version": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "customerId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "customer": {
-            "$ref": "#/components/schemas/Customer"
-          },
-          "productId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "product": {
-            "$ref": "#/components/schemas/Product"
-          },
-          "productVariantId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "productVariant": {
-            "$ref": "#/components/schemas/ProductVariant"
-          },
-          "quantity": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "additionalProperties": false
-      },
       "CartItemDto": {
         "type": "object",
         "properties": {
@@ -8817,6 +8838,15 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "initialStock": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "warehouseId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -9087,13 +9117,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Order"
-            },
-            "nullable": true
-          },
-          "cartItems": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CartItem"
             },
             "nullable": true
           }
@@ -9529,6 +9552,24 @@
             "nullable": true
           },
           "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginWithOtpRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "nullable": true
+          },
+          "channel": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
             "type": "string",
             "nullable": true
           }
@@ -10544,6 +10585,20 @@
         "type": "integer",
         "format": "int32"
       },
+      "OtpRequestedResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "Page": {
         "type": "object",
         "properties": {
@@ -11485,6 +11540,20 @@
             "nullable": true
           },
           "phoneNumber": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestOtpRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "nullable": true
+          },
+          "channel": {
             "type": "string",
             "nullable": true
           }
@@ -13062,6 +13131,12 @@
         "description": "The tenant Store's GUID identifier, required on every request.",
         "name": "X-Store-Id",
         "in": "header"
+      },
+      "GuestId": {
+        "type": "apiKey",
+        "description": "Optional. A client-generated GUID identifying an anonymous cart — only used by /cart endpoints when not logged in. Omit once authenticated.",
+        "name": "X-Guest-Id",
+        "in": "header"
       }
     }
   },
@@ -13071,6 +13146,9 @@
     },
     {
       "StoreId": [ ]
+    },
+    {
+      "GuestId": [ ]
     }
   ]
 }

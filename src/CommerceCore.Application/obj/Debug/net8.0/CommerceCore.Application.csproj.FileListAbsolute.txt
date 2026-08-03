@@ -17,6 +17,12 @@ D:\CommerceCoreModules\CommerceCore-Complete\CommerceCore\src\CommerceCore.Appli
 D:\CommerceCoreModules\CommerceCore-Complete\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\refint\CommerceCore.Application.dll
 D:\CommerceCoreModules\CommerceCore-Complete\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.pdb
 D:\CommerceCoreModules\CommerceCore-Complete\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\ref\CommerceCore.Application.dll
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.csproj.AssemblyReference.cache
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.AssemblyInfoInputs.cache
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.AssemblyInfo.cs
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.csproj.CoreCompileInputs.cache
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.sourcelink.json
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\bin\Debug\net8.0\CommerceCore.Application.deps.json
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\bin\Debug\net8.0\CommerceCore.Application.dll
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\bin\Debug\net8.0\CommerceCore.Application.pdb
@@ -26,12 +32,6 @@ C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Applic
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\bin\Debug\net8.0\CommerceCore.Domain.pdb
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\bin\Debug\net8.0\CommerceCore.Contracts.pdb
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\bin\Debug\net8.0\CommerceCore.Shared.pdb
-C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.csproj.AssemblyReference.cache
-C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.AssemblyInfoInputs.cache
-C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.AssemblyInfo.cs
-C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.csproj.CoreCompileInputs.cache
-C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.sourcelink.json
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\Commerce.979E119D.Up2Date
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\CommerceCore.Application.dll
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Application\obj\Debug\net8.0\refint\CommerceCore.Application.dll

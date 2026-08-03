@@ -1,0 +1,434 @@
+# CommerceCore — API Endpoint Reference (summary)
+
+Note: every response is wrapped in the project's standard envelope:
+{
+  "success": true|false,
+  "message": "string",
+  "data": { ... } | null,
+  "errors": [ ... ],
+  "traceId": "string",
+  "timestamp": "2026-07-22T..."
+}
+
+Every request (unless noted) must include the `X-Store-Id` header (tenant GUID). Authentication uses `Authorization: Bearer {accessToken}`.
+
+This document lists the main API endpoints implemented in the workspace, their purpose, when to call them, whether login is required, what tables/entities they touch / return, and the JSON structure they return (contract records used in code).
+
+---
+
+## 1. Auth (base route: `POST /api/v1/auth/*`)
+
+All routes under `/api/v1/auth` are in `AuthController`.
+
+- POST `/api/v1/auth/register`
+  - Purpose: Register a new user and return tokens.
+  - Call when: creating a new account.
+  - Auth: anonymous
+  - Touches DB tables: `Users`, `Roles`, `UserRoles`, `RefreshTokens` (creates user + tokens)
+  - Success response: `AuthResponse`
+  - HTTP: 200
+  - JSON (data):
+    {
+      "userId": "guid",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "roles": ["string", ...],
+      "accessToken": "jwt",
+      "refreshToken": "string",
+      "accessTokenExpiresAt": "datetime"
+    }
+
+- POST `/api/v1/auth/login`
+  - Purpose: Obtain access + refresh tokens from credentials.
+  - Call when: logging in with email+password.
+  - Auth: anonymous
+  - Touches DB tables: `Users`, `RefreshTokens`
+  - Response: `AuthResponse` (same structure as above)
+  - HTTP: 200
+
+- POST `/api/v1/auth/refresh`
+  - Purpose: Rotate refresh token and return new access token (and refresh token).
+  - Call when: access token expired (use refresh token).
+  - Auth: anonymous (passes refresh token in body)
+  - Touches DB tables: `RefreshTokens`
+  - Response: `AuthResponse`
+  - HTTP: 200
+
+- POST `/api/v1/auth/otp/request`
+  - Purpose: Request an OTP (Email or SMS) for login; rate-limited.
+  - Call when: want passwordless login via OTP.
+  - Auth: anonymous
+  - Touches DB tables: `OtpCodes`
+  - Response: `OtpRequestedResponse`
+  - HTTP: 200
+  - JSON (data):
+    {
+      "message": "A login code has been sent via Email.",
+      "expiresAt": "datetime"
+    }
+
+- POST `/api/v1/auth/otp/login`
+  - Purpose: Login using OTP code (Email or SMS).
+  - Call when: after receiving OTP to log in.
+  - Auth: anonymous
+  - Touches DB tables: `OtpCodes`, `Users`, `RefreshTokens` (creates tokens if login succeeds)
+  - Response: `AuthResponse`
+  - HTTP: 200
+
+- POST `/api/v1/auth/logout`
+  - Purpose: Revoke the supplied refresh token.
+  - Call when: explicitly logging out to revoke refresh tokens.
+  - Auth: required (user must be authenticated)
+  - Touches DB tables: `RefreshTokens`
+  - Response: envelope with `data: null` (200 OK)
+
+- GET `/api/v1/auth/me`
+  - Purpose: Return current authenticated user profile.
+  - Call when: client needs current user info.
+  - Auth: required
+  - Touches DB tables: `Users`, `UserRoles`
+  - Response: `CurrentUserResponse`
+  - HTTP: 200
+  - JSON (data):
+    {
+      "userId": "guid",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "phoneNumber": "string|null",
+      "roles": ["string", ...],
+      "createdDate": "datetime"
+    }
+
+---
+
+## 2. Cart (base route: `/api/v1/cart`) — controller is `[Authorize]`
+
+Controller: `CartController` (all actions require authenticated user)
+
+- GET `/api/v1/cart`
+  - Purpose: Get current customer's cart.
+  - Call when: show cart contents to logged-in user.
+  - Auth: required
+  - Touches DB: `CartItems`, `ProductVariants`, `Products`, `InventoryItems`
+  - Response: `CartResponse`
+  - HTTP: 200
+  - JSON (data):
+    {
+      "items": [
+        {
+          "id":"guid",
+          "productId":"guid",
+          "productVariantId":"guid",
+          "productName":"string",
+          "variantDisplayName":"string|null",
+          "imageUrl":"string|null",
+          "unitPrice": decimal,
+          "quantity": int,
+          "availableStock": int
+        }, ...
+      ],
+      "subTotal": decimal,
+      "totalItemCount": int
+    }
+
+- POST `/api/v1/cart`
+  - Purpose: Add an item to cart.
+  - Call when: user adds variant to cart.
+  - Auth: required
+  - Touches DB: `CartItems`, `InventoryItems`, `ProductVariants`, `Products`
+  - Response: `CartResponse` (updated)
+  - HTTP: 200
+
+- PUT `/api/v1/cart/{cartItemId}`
+  - Purpose: Update quantity for a cart line.
+  - Call when: user edits quantity.
+  - Auth: required
+  - Touches DB: `CartItems`, `InventoryItems`
+  - Response: `CartResponse` (updated)
+  - HTTP: 200
+
+- DELETE `/api/v1/cart/{cartItemId}`
+  - Purpose: Remove an item.
+  - Call when: user deletes item from cart.
+  - Auth: required
+  - Touches DB: `CartItems`
+  - Response: `CartResponse` (updated)
+  - HTTP: 200
+
+---
+
+## 3. Orders (base route: `/api/v1/orders`) — controller is `[Authorize]`
+
+Controller: `OrdersController` (most actions require authentication; admin routes restricted)
+
+- POST `/api/v1/orders/checkout`
+  - Purpose: Create an order from current user's cart (checkout) and reserve stock.
+  - Call when: user confirms checkout and selects payment method.
+  - Auth: required
+  - Touches DB: `Orders`, `OrderItems`, `CartItems`, `InventoryItems`, `CouponUsages`, maybe `Coupons`
+  - Response: `OrderDto`
+  - HTTP: 201
+  - JSON (data) (fields from OrderDto):
+    {
+      "id":"guid",
+      "orderNumber":"string",
+      "status":"string",
+      "paymentStatus":"string",
+      "currencyCode":"string",
+      "subTotal":decimal,
+      "discountAmount":decimal,
+      "shippingAmount":decimal,
+      "taxAmount":decimal,
+      "totalAmount":decimal,
+      "shippingFullName":"string",
+      "shippingAddressLine1":"string",
+      "shippingAddressLine2": "string|null",
+      "shippingCity":"string",
+      "shippingState":"string",
+      "shippingPostalCode":"string",
+      "shippingCountry":"string",
+      "placedAt":"datetime",
+      "items": [ { OrderItemDto }, ... ]
+    }
+
+- GET `/api/v1/orders/my`
+  - Purpose: Get paged list of current user's orders.
+  - Call when: show customer's order history.
+  - Auth: required
+  - Touches DB: `Orders`, `OrderItems`
+  - Response: `PagedResult<OrderDto>`
+  - HTTP: 200
+
+- GET `/api/v1/orders/{id}`
+  - Purpose: Get order details by id.
+  - Call when: view a single order (owner or admin).
+  - Auth: required (authorization: owners allowed; admin/storeadmin allowed)
+  - Touches DB: `Orders`, `OrderItems`, `Customers`
+  - Response: `OrderDto`
+  - HTTP: 200
+
+- POST `/api/v1/orders/{id}/cancel`
+  - Purpose: Cancel an order (subject to business rules).
+  - Call when: user cancels their order (or admin cancels).
+  - Auth: required
+  - Touches DB: `Orders`, `InventoryItems` (possibly), `OrderItems`
+  - Response: `OrderDto` (updated)
+  - HTTP: 200
+
+- GET `/api/v1/orders` (admin)
+  - Purpose: Admin paged listing of all orders for store.
+  - Call when: admin wants global order list.
+  - Auth: required, Roles = `Admin,StoreAdmin`
+  - Touches DB: `Orders`, `OrderItems`
+  - Response: `PagedResult<OrderDto>`
+  - HTTP: 200
+
+- PUT `/api/v1/orders/{id}/status` (admin)
+  - Purpose: Update order status (admin action).
+  - Call when: admin updates status (e.g., mark shipped).
+  - Auth: required, Roles = `Admin,StoreAdmin`
+  - Touches DB: `Orders`
+  - Response: `OrderDto`
+  - HTTP: 200
+
+---
+
+## 4. Products (base route `/api/v1/products`) — `ProductsController`
+
+- GET `/api/v1/products`
+  - Purpose: Paged product search/list.
+  - Call when: product listing / search on storefront.
+  - Auth: anonymous (no [Authorize] on controller)
+  - Touches DB: `Products`, `ProductVariants`, `ProductImages`, `ProductAttributes`, `InventoryItems`, `Categories`, `Brands`
+  - Response: `PagedResult<ProductDto>`
+  - HTTP: 200
+  - ProductDto includes:
+    - product fields (id, name, slug, descriptions, base price, flags),
+    - CategoryId and CategoryName,
+    - BrandId and BrandName,
+    - ImageUrls (string[]),
+    - Attributes (ProductAttributeDto[]),
+    - Variants array (ProductVariantDto) — each variant includes available stock computed from `InventoryItems`.
+
+- GET `/api/v1/products/{id}`
+  - Purpose: Get one product details with variants, images, attributes.
+  - Call when: product detail page.
+  - Auth: anonymous
+  - Touches DB: same as above (includes joins)
+  - Response: `ProductDto`
+  - HTTP: 200
+
+- POST `/api/v1/products` (admin)
+  - Purpose: Create product (admin).
+  - Call when: admin creates a new product.
+  - Auth: required Roles = `Admin,StoreAdmin,CatalogManager`
+  - Touches DB: `Products`, `ProductVariants`, `ProductImages`, `ProductAttributes`
+  - Response: `ProductDto` (201)
+
+- PUT `/api/v1/products/{id}` (admin)
+  - Purpose: Update product.
+  - Auth: required Roles = `Admin,StoreAdmin,CatalogManager`
+  - Response: `ProductDto` (200)
+
+- DELETE `/api/v1/products/{id}` (admin)
+  - Purpose: Delete product (soft delete).
+  - Auth: required Roles = `Admin,StoreAdmin,CatalogManager`
+  - Response: 204 No Content
+
+---
+
+## 5. Categories (base route `/api/v1/categories`) — `CategoriesController`
+
+- GET `/api/v1/categories`
+  - Purpose: Get category tree (flattened).
+  - Call when: populate menu/category lists; storefront.
+  - Auth: anonymous
+  - Touches DB: `Categories`
+  - Response: `IReadOnlyList<CategoryDto>`
+  - CategoryDto:
+    {
+      "id": "guid",
+      "name": "string",
+      "slug": "string",
+      "description": "string|null",
+      "imageUrl": "string|null",
+      "parentCategoryId": "guid|null",
+      "isActive": bool
+    }
+
+- GET `/api/v1/categories/{id}`
+  - Purpose: Get one category
+  - Auth: anonymous
+  - Response: `CategoryDto` (200)
+
+- POST `/api/v1/categories` (admin)
+  - Purpose: Create category
+  - Auth: required Roles = `Admin,StoreAdmin`
+  - Response: `CategoryDto` (201)
+
+- PUT `/api/v1/categories/{id}` (admin)
+  - Purpose: Update
+  - Auth: required Roles = `Admin,StoreAdmin`
+  - Response: `CategoryDto` (200)
+
+- DELETE `/api/v1/categories/{id}` (admin)
+  - Purpose: Delete (subject to business rules)
+  - Auth: required Roles = `Admin,StoreAdmin`
+  - Response: 204 No Content
+
+---
+
+## 6. Generic CRUD endpoints (many resources) — pattern `api/v1/{resource}`
+
+Implemented by `GenericCrudController<T>` with concrete derived controllers in `Api\Controllers\Generic\*`.
+
+Common routes for each resource:
+
+- GET `/api/v1/{resource}` — paged listing
+  - Purpose: list entities (paged)
+  - Auth:
+    - For controllers derived from `PublicReadCrudController<T>`: GET is AllowAnonymous (public)
+    - For `AuthenticatedCrudController<T>`: requires authentication
+    - For `AdminCrudController<T>`: requires Admin role
+  - Touches DB: the entity's table (e.g., `Brands`, `Coupons`, `Blogs`, `Countries`, etc.)
+  - Response: `PagedResult<TEntity>` where `TEntity` is the domain entity (raw)
+
+- GET `/api/v1/{resource}/{id}`
+  - Purpose: get one entity
+  - Auth: same rules as above (public read or require auth)
+  - Response: raw `TEntity` JSON
+
+- POST `/api/v1/{resource}`
+  - Purpose: create entity
+  - Auth: typically Admin (`AdminCrudController`) or Authenticated depending on controller
+  - Response: Created entity (201)
+
+- PUT `/api/v1/{resource}/{id}`
+  - Purpose: update entity
+  - Auth: typically Admin
+  - Response: updated entity (200)
+
+- DELETE `/api/v1/{resource}/{id}`
+  - Purpose: delete (soft-delete)
+  - Auth: typically Admin
+  - Response: 204 No Content
+
+Common resources and auth patterns (examples from code):
+- PublicRead (reads public): `brands`, `collections`, `blogs`, `blog-categories`, `pages`, `menus`, `menu-items`, `banners`, `faqs`, `countries`, `states`, `cities`, `currencies`, `languages`, `shipping-methods`
+- Admin-only (all actions require Admin/StoreAdmin): `attributes`, `attribute-values`, `taxes`, `shipping-zones`, `warehouses`, `system-settings`, `notification-templates`, `email-templates`, `coupons` (Admin controller)
+- Authenticated only: `wishlists`, `reviews` (AuthenticatedCrudController or PublicReadCrudController depending on resource)
+
+Notes:
+- Generic controllers return the raw domain entity JSON (not a DTO). Domain entities are in `CommerceCore.Domain`. The generic pipeline serializes the entity object; navigation properties may or may not be included depending on EF Core loading and JSON options. The API config sets ReferenceHandler.IgnoreCycles and DefaultIgnoreCondition = WhenWritingNull.
+- Because generic responses return the domain entity, they do not necessarily expand relational tables fully — navigation collections can be present if EF loaded them; otherwise only scalar FK fields will be present.
+
+---
+
+## 7. Reference endpoints and others
+
+Examples:
+- `GET /api/v1/currencies` — returns `Currency` entities (PublicRead).
+- `GET /api/v1/languages` — returns `Language` entities.
+- `GET /api/v1/shipping-methods` — returns `ShippingMethod` entities (public read).
+- For all above, use the Generic CRUD semantics and auth rules described in section 6.
+
+---
+
+## 8. Response envelope and error responses
+
+All responses are wrapped in the standard envelope. On validation or business errors the `success` will be `false`, `errors` will contain details and the HTTP status code will reflect the error (400/403/404/500 etc). The envelope is added globally by `ApiResponseWrapperFilter` (registered in Program.cs).
+
+---
+
+## 9. Notes about "what the API will NOT return"
+
+- Many endpoints return a shaped DTO that intentionally excludes some tables or private fields:
+  - `OrderDto` includes snapshotted order item details — it does NOT include the full `Product` or `Customer` entities; only snapshots (strings, ids) are returned. It therefore does not return full `Products` table rows.
+  - `ProductDto` returns a curated projection: images (URLs), variants, attributes and aggregated stock — it does not return EF navigation graphs like every related entity complete with internal audit fields. Sensitive/internal fields (passwords, passwordHash, internal audit logs) are not part of DTOs.
+  - Generic CRUD controllers return the raw domain entity. They typically exclude heavy navigation graphs unless EF explicitly includes them. If you need joins/expanded related tables, prefer the hand-written DTO endpoints (Products, Orders).
+- In short: hand-written endpoints provide explicit, documented DTOs (see Contracts). Generic endpoints return domain entities (inspect domain class to see fields). When in doubt, inspect the Contracts project DTOs for the exact response schema.
+
+---
+
+## 10. Quick mapping: controller → main returned contract / DTO
+
+- AuthController
+  - Register / Login / Refresh / OTP login → `AuthResponse`
+  - OTP request → `OtpRequestedResponse`
+  - Me → `CurrentUserResponse`
+
+- CartController → `CartResponse` (contains `CartItemDto[]`)
+
+- OrdersController
+  - Checkout, GetById, GetMyOrders, Admin list → `OrderDto` and `OrderItemDto`
+
+- ProductsController → `ProductDto`, `ProductVariantDto`, `ProductAttributeDto`
+
+- CategoriesController → `CategoryDto`
+
+- Generic controllers → domain `TEntity` (raw); many of these have a corresponding domain class in `CommerceCore.Domain.Entities.*`. Read the domain entity for exact fields.
+
+---
+
+## 11. Example request headers
+
+- Required:
+  - `X-Store-Id: {store-guid}`
+- For authenticated endpoints:
+  - `Authorization: Bearer {accessToken}`
+
+---
+
+## 12. How to generate a full machine-checked list (optional)
+
+If you want a machine-extracted full OpenAPI spec with exact schemas:
+- Start the API locally (make sure Swagger is enabled) and open `/swagger/v1/swagger.json` — this is the authoritative contract with per-operation schemas.
+- Or run `dotnet run` for `CommerceCore.Api` (with appropriate connection string and `ASPNETCORE_ENVIRONMENT=Development`) and then fetch the swagger JSON.
+
+---
+
+If you want, I can:
+- Generate a complete `docs/API_FULL.md` enumerating every resource found under `Api\Controllers` (I can scan controllers and produce a CSV/markdown table listing every route, method, auth, DTO and touched tables), or
+- Produce example request/response samples for a few key flows (Register → Login → Checkout).

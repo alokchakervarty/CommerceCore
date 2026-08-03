@@ -1,33 +1,45 @@
-# Build folders
-bin/
-obj/
-
-# Visual Studio
+# Visual Studio / Rider / VS Code
 .vs/
-
-# User files
-*.user
+.vscode/
+.idea/
 *.suo
+*.user
 *.userosscache
 *.sln.docstates
 
-# Rider
-.idea/
-
-# VS Code
-.vscode/
+# Build outputs
+bin/
+obj/
+**/bin/
+**/obj/
 
 # NuGet
-packages/
 *.nupkg
+.project.lock.json
+
+# EF Core Migrations
+Migrations/**/Snapshot.cs
+
+# Local secrets and config
+appsettings.Development.json
+secrets.json
 
 # Logs
-logs/
 *.log
 
-# Node
-node_modules/
-dist/
+# OS files
+.DS_Store
+Thumbs.db
 
-# Test Results
+# Test results
 TestResults/
+
+# Coverage
+coverage*/
+
+# Misc
+*.db
+*.sqlite
+
+# NuGet packages
+packages/

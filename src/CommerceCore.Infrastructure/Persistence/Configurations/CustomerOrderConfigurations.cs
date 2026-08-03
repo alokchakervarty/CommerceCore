@@ -1,5 +1,6 @@
 using CommerceCore.Domain.Entities.Customers;
 using CommerceCore.Domain.Entities.Orders;
+using CommerceCore.Domain.Entities.Reference;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -57,6 +58,12 @@ public class AddressConfiguration : IEntityTypeConfiguration<Address>
         builder.Property(a => a.State).HasMaxLength(100).IsRequired();
         builder.Property(a => a.PostalCode).HasMaxLength(20).IsRequired();
         builder.Property(a => a.Version).IsConcurrencyToken();
+
+        // Make CountryId optional in the database and configure FK to Countries table
+        builder.HasOne<Country>()
+            .WithMany()
+            .HasForeignKey(a => a.CountryId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

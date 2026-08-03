@@ -335,6 +335,58 @@
   },
   {
     "ContainingType": "CommerceCore.Api.Controllers.AuthController",
+    "Method": "LoginWithOtp",
+    "RelativePath": "api/v1/auth/otp/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CommerceCore.Contracts.Auth.LoginWithOtpRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "CommerceCore.Contracts.Auth.AuthResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.AuthController",
+    "Method": "RequestOtp",
+    "RelativePath": "api/v1/auth/otp/request",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CommerceCore.Contracts.Auth.RequestOtpRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "CommerceCore.Contracts.Auth.OtpRequestedResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.AuthController",
     "Method": "Refresh",
     "RelativePath": "api/v1/auth/refresh",
     "HttpMethod": "POST",

@@ -1,5 +1,6 @@
 using CommerceCore.Domain.Enums;
 using CommerceCore.Shared.Entities;
+using CommerceCore.Domain.Entities.Reference;
 
 namespace CommerceCore.Domain.Entities.Customers;
 
@@ -20,7 +21,10 @@ public class Address : BaseEntity
     public string City { get; set; } = string.Empty;
     public string State { get; set; } = string.Empty;
     public string PostalCode { get; set; } = string.Empty;
-    public Guid CountryId { get; set; }
+
+    // Country is optional at the API level; make the FK nullable so addresses can be saved without it.
+    public Guid? CountryId { get; set; }
+    public Country? Country { get; set; }
 
     public bool IsDefaultShipping { get; set; }
     public bool IsDefaultBilling { get; set; }
