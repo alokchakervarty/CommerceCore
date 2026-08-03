@@ -11,197 +11,214 @@ using Microsoft.EntityFrameworkCore;
 namespace CommerceCore.Application.Features.Orders;
 
 public record CheckoutCommand(Guid ShippingAddressId, Guid? BillingAddressId, string? CouponCode, string PaymentMethod)
-    : IRequest<OrderDto>;
+ : IRequest<OrderDto>;
 
 public class CheckoutCommandValidator : AbstractValidator<CheckoutCommand>
 {
-    public CheckoutCommandValidator()
-    {
-        RuleFor(x => x.ShippingAddressId).NotEmpty();
-        RuleFor(x => x.PaymentMethod).NotEmpty();
-    }
+ public CheckoutCommandValidator()
+ {
+ RuleFor(x => x.ShippingAddressId).NotEmpty();
+ RuleFor(x => x.PaymentMethod).NotEmpty();
+ }
 }
 
 public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, OrderDto>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-    private readonly ICurrentTenantService _tenant;
+ private readonly IApplicationDbContext _db;
+ private readonly ICurrentUserService _currentUser;
+ private readonly ICurrentTenantService _tenant;
 
-    public CheckoutCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, ICurrentTenantService tenant)
-    {
-        _db = db;
-        _currentUser = currentUser;
-        _tenant = tenant;
-    }
+ public CheckoutCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, ICurrentTenantService tenant)
+ {
+ _db = db;
+ _currentUser = currentUser;
+ _tenant = tenant;
+ }
 
-    public async Task<OrderDto> Handle(CheckoutCommand request, CancellationToken cancellationToken)
-    {
-        var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
+ public async Task<OrderDto> Handle(CheckoutCommand request, CancellationToken cancellationToken)
+ {
+ var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
 
-        var shippingAddress = await _db.Addresses.FirstOrDefaultAsync(
-            a => a.Id == request.ShippingAddressId && a.CustomerId == customer.Id, cancellationToken)
-            ?? throw new ValidationAppException(new Dictionary<string, string[]>
-            {
-                [nameof(request.ShippingAddressId)] = new[] { "Invalid shipping address." }
-            });
+ var shippingAddress = await _db.Addresses.FirstOrDefaultAsync(
+ a => a.Id == request.ShippingAddressId && a.CustomerId == customer.Id, cancellationToken)
+ ?? throw new ValidationAppException(new Dictionary<string, string[]>
+ {
+ [nameof(request.ShippingAddressId)] = new[] { "Invalid shipping address." }
+ });
 
-        var billingAddress = request.BillingAddressId.HasValue
-            ? await _db.Addresses.FirstOrDefaultAsync(
-                a => a.Id == request.BillingAddressId && a.CustomerId == customer.Id, cancellationToken)
-            : shippingAddress;
+ var billingAddress = request.BillingAddressId.HasValue
+ ? await _db.Addresses.FirstOrDefaultAsync(
+ a => a.Id == request.BillingAddressId && a.CustomerId == customer.Id, cancellationToken)
+ : shippingAddress;
 
-        var countryIds = new[] { shippingAddress.CountryId, billingAddress?.CountryId ?? shippingAddress.CountryId }.Distinct();
-        var countryNames = await _db.Set<Domain.Entities.Reference.Country>()
-            .Where(c => countryIds.Contains(c.Id))
-            .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
+ // Build a non-nullable list of country IDs to query the Countries table safely
+ var countryIdList = new List<Guid>();
+ if (shippingAddress.CountryId.HasValue)
+ countryIdList.Add(shippingAddress.CountryId.Value);
+ var billingCountryId = billingAddress?.CountryId;
+ if (billingCountryId.HasValue)
+ countryIdList.Add(billingCountryId.Value);
 
-        var shippingCountryName = countryNames.GetValueOrDefault(shippingAddress.CountryId, string.Empty);
-        var billingCountryName = countryNames.GetValueOrDefault(billingAddress?.CountryId ?? shippingAddress.CountryId, string.Empty);
+ var distinctCountryIds = countryIdList.Distinct().ToList();
 
-        var cartItems = await _db.CartItems
-            .Include(ci => ci.Product)
-            .Include(ci => ci.ProductVariant)
-            .Where(ci => ci.CustomerId == customer.Id)
-            .ToListAsync(cancellationToken);
+ var countryNames = distinctCountryIds.Any()
+ ? await _db.Set<Domain.Entities.Reference.Country>()
+ .Where(c => distinctCountryIds.Contains(c.Id))
+ .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken)
+ : new Dictionary<Guid, string>();
 
-        if (cartItems.Count == 0)
-            throw new BusinessRuleException("Your cart is empty.");
+ string shippingCountryName = string.Empty;
+ if (shippingAddress.CountryId.HasValue && countryNames.TryGetValue(shippingAddress.CountryId.Value, out var sname))
+ shippingCountryName = sname;
 
-        // Validate + reserve stock for every line before creating anything, so a
-        // single out-of-stock item fails the whole checkout rather than partially.
-        var inventoryByVariant = new Dictionary<Guid, List<Domain.Entities.Inventory.InventoryItem>>();
-        foreach (var ci in cartItems)
-        {
-            var items = await _db.InventoryItems
-                .Where(i => i.ProductVariantId == ci.ProductVariantId)
-                .OrderByDescending(i => i.QuantityOnHand - i.QuantityReserved) // fulfill from the fullest warehouse first
-                .ToListAsync(cancellationToken);
+ string billingCountryName = string.Empty;
+ var billingCid = billingAddress?.CountryId ?? shippingAddress.CountryId;
+ if (billingCid.HasValue && countryNames.TryGetValue(billingCid.Value, out var bname))
+ billingCountryName = bname;
 
-            var available = items.Sum(i => i.QuantityOnHand - i.QuantityReserved);
-            if (available < ci.Quantity)
-                throw new BusinessRuleException($"'{ci.Product?.Name}' no longer has enough stock ({available} available).");
+ var cartItems = await _db.CartItems
+ .Include(ci => ci.Product)
+ .Include(ci => ci.ProductVariant)
+ .Where(ci => ci.CustomerId == customer.Id)
+ .ToListAsync(cancellationToken);
 
-            inventoryByVariant[ci.ProductVariantId] = items;
-        }
+ if (cartItems.Count ==0)
+ throw new BusinessRuleException("Your cart is empty.");
 
-        var order = new Order
-        {
-            StoreId = _tenant.StoreId,
-            OrderNumber = GenerateOrderNumber(),
-            CustomerId = customer.Id,
-            Status = OrderStatus.Pending,
-            PaymentStatus = OrderPaymentStatus.Pending,
-            PaymentMethod = null, // set below once resolved to a snapshot string
+ // Validate + reserve stock for every line before creating anything, so a
+ // single out-of-stock item fails the whole checkout rather than partially.
+ var inventoryByVariant = new Dictionary<Guid, List<Domain.Entities.Inventory.InventoryItem>>();
+ foreach (var ci in cartItems)
+ {
+ var items = await _db.InventoryItems
+ .Where(i => i.ProductVariantId == ci.ProductVariantId)
+ .OrderByDescending(i => i.QuantityOnHand - i.QuantityReserved) // fulfill from the fullest warehouse first
+ .ToListAsync(cancellationToken);
 
-            ShippingFullName = shippingAddress.FullName,
-            ShippingPhoneNumber = shippingAddress.PhoneNumber,
-            ShippingAddressLine1 = shippingAddress.AddressLine1,
-            ShippingAddressLine2 = shippingAddress.AddressLine2,
-            ShippingCity = shippingAddress.City,
-            ShippingState = shippingAddress.State,
-            ShippingPostalCode = shippingAddress.PostalCode,
-            ShippingCountry = shippingCountryName,
+ var available = items.Sum(i => i.QuantityOnHand - i.QuantityReserved);
+ if (available < ci.Quantity)
+ throw new BusinessRuleException($"'{ci.Product?.Name}' no longer has enough stock ({available} available).");
 
-            BillingFullName = billingAddress?.FullName ?? shippingAddress.FullName,
-            BillingPhoneNumber = billingAddress?.PhoneNumber ?? shippingAddress.PhoneNumber,
-            BillingAddressLine1 = billingAddress?.AddressLine1 ?? shippingAddress.AddressLine1,
-            BillingAddressLine2 = billingAddress?.AddressLine2 ?? shippingAddress.AddressLine2,
-            BillingCity = billingAddress?.City ?? shippingAddress.City,
-            BillingState = billingAddress?.State ?? shippingAddress.State,
-            BillingPostalCode = billingAddress?.PostalCode ?? shippingAddress.PostalCode,
-            BillingCountry = billingCountryName
-        };
+ inventoryByVariant[ci.ProductVariantId] = items;
+ }
 
-        decimal subTotal = 0;
+ var order = new Order
+ {
+ StoreId = _tenant.StoreId,
+ OrderNumber = GenerateOrderNumber(),
+ CustomerId = customer.Id,
+ Status = OrderStatus.Pending,
+ PaymentStatus = OrderPaymentStatus.Pending,
+ PaymentMethod = null, // set below once resolved to a snapshot string
 
-        foreach (var ci in cartItems)
-        {
-            var unitPrice = ci.ProductVariant?.Price ?? ci.Product?.BasePrice ?? 0;
-            var lineTotal = unitPrice * ci.Quantity;
-            subTotal += lineTotal;
+ ShippingFullName = shippingAddress.FullName,
+ ShippingPhoneNumber = shippingAddress.PhoneNumber,
+ ShippingAddressLine1 = shippingAddress.AddressLine1,
+ ShippingAddressLine2 = shippingAddress.AddressLine2,
+ ShippingCity = shippingAddress.City,
+ ShippingState = shippingAddress.State,
+ ShippingPostalCode = shippingAddress.PostalCode,
+ ShippingCountry = shippingCountryName,
 
-            order.OrderItems.Add(new OrderItem
-            {
-                ProductId = ci.ProductId,
-                ProductVariantId = ci.ProductVariantId,
-                ProductNameSnapshot = ci.Product?.Name ?? string.Empty,
-                VariantDisplayNameSnapshot = ci.ProductVariant?.IsDefault == true ? null : ci.ProductVariant?.DisplayName,
-                SkuSnapshot = ci.ProductVariant?.Sku ?? string.Empty,
-                ImageUrlSnapshot = ci.ProductVariant?.ImageUrl,
-                UnitPrice = unitPrice,
-                Quantity = ci.Quantity
-            });
+ BillingFullName = billingAddress?.FullName ?? shippingAddress.FullName,
+ BillingPhoneNumber = billingAddress?.PhoneNumber ?? shippingAddress.PhoneNumber,
+ BillingAddressLine1 = billingAddress?.AddressLine1 ?? shippingAddress.AddressLine1,
+ BillingAddressLine2 = billingAddress?.AddressLine2 ?? shippingAddress.AddressLine2,
+ BillingCity = billingAddress?.City ?? shippingAddress.City,
+ BillingState = billingAddress?.State ?? shippingAddress.State,
+ BillingPostalCode = billingAddress?.PostalCode ?? shippingAddress.PostalCode,
+ BillingCountry = billingCountryName
+ };
 
-            // Reserve stock (does not touch QuantityOnHand — that happens on fulfillment/shipment).
-            var remaining = ci.Quantity;
-            foreach (var inv in inventoryByVariant[ci.ProductVariantId])
-            {
-                if (remaining <= 0) break;
-                var availableHere = inv.QuantityOnHand - inv.QuantityReserved;
-                var take = Math.Min(availableHere, remaining);
-                if (take <= 0) continue;
+ decimal subTotal =0;
 
-                inv.QuantityReserved += take;
-                remaining -= take;
-            }
-        }
+ foreach (var ci in cartItems)
+ {
+ var unitPrice = ci.ProductVariant?.Price ?? ci.Product?.BasePrice ??0;
+ var lineTotal = unitPrice * ci.Quantity;
+ subTotal += lineTotal;
 
-        // Coupon application is intentionally minimal here: validity/eligibility checks
-        // live in the generic Coupon CRUD module; this just records the snapshot if a
-        // valid, currently-active coupon code was supplied.
-        decimal discountAmount = 0;
-        if (!string.IsNullOrWhiteSpace(request.CouponCode))
-        {
-            var coupon = await _db.Coupons.FirstOrDefaultAsync(
-                c => c.StoreId == _tenant.StoreId && c.Code == request.CouponCode.Trim().ToUpperInvariant() && c.IsActive,
-                cancellationToken);
+ order.OrderItems.Add(new OrderItem
+ {
+ ProductId = ci.ProductId,
+ ProductVariantId = ci.ProductVariantId,
+ ProductNameSnapshot = ci.Product?.Name ?? string.Empty,
+ VariantDisplayNameSnapshot = ci.ProductVariant?.IsDefault == true ? null : ci.ProductVariant?.DisplayName,
+ SkuSnapshot = ci.ProductVariant?.Sku ?? string.Empty,
+ ImageUrlSnapshot = ci.ProductVariant?.ImageUrl,
+ UnitPrice = unitPrice,
+ Quantity = ci.Quantity
+ });
 
-            if (coupon != null && (coupon.EndsAt == null || coupon.EndsAt > DateTime.UtcNow)
-                && (coupon.UsageLimitTotal == null || coupon.TimesUsed < coupon.UsageLimitTotal))
-            {
-                discountAmount = coupon.DiscountType switch
-                {
-                    Domain.Enums.DiscountType.Percentage => Math.Round(subTotal * (coupon.DiscountValue / 100m), 2),
-                    Domain.Enums.DiscountType.FixedAmount => coupon.DiscountValue,
-                    _ => 0
-                };
-                if (coupon.MaxDiscountAmount.HasValue)
-                    discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
+ // Reserve stock (does not touch QuantityOnHand — that happens on fulfillment/shipment).
+ var remaining = ci.Quantity;
+ foreach (var inv in inventoryByVariant[ci.ProductVariantId])
+ {
+ if (remaining <=0) break;
+ var availableHere = inv.QuantityOnHand - inv.QuantityReserved;
+ var take = Math.Min(availableHere, remaining);
+ if (take <=0) continue;
 
-                order.CouponId = coupon.Id;
-                order.CouponCode = coupon.Code;
-                coupon.TimesUsed += 1;
+ inv.QuantityReserved += take;
+ remaining -= take;
+ }
+ }
 
-                _db.CouponUsages.Add(new Domain.Entities.Marketing.CouponUsage
-                {
-                    CouponId = coupon.Id,
-                    OrderId = order.Id,
-                    CustomerId = customer.Id,
-                    DiscountAmountApplied = discountAmount
-                });
-            }
-        }
+ // Coupon application is intentionally minimal here: validity/eligibility checks
+ // live in the generic Coupon CRUD module; this just records the snapshot if a
+ // valid, currently-active coupon code was supplied.
+ decimal discountAmount =0;
+ if (!string.IsNullOrWhiteSpace(request.CouponCode))
+ {
+ var coupon = await _db.Coupons.FirstOrDefaultAsync(
+ c => c.StoreId == _tenant.StoreId && c.Code == request.CouponCode.Trim().ToUpperInvariant() && c.IsActive,
+ cancellationToken);
 
-        order.PaymentMethod = request.PaymentMethod;
-        order.SubTotal = subTotal;
-        order.DiscountAmount = discountAmount;
-        order.ShippingAmount = 0; // shipping-method rate calculation intentionally out of scope for this endpoint
-        order.TaxAmount = 0;      // tax calculation intentionally out of scope for this endpoint
-        order.TotalAmount = subTotal - discountAmount + order.ShippingAmount + order.TaxAmount;
+ if (coupon != null && (coupon.EndsAt == null || coupon.EndsAt > DateTime.UtcNow)
+ && (coupon.UsageLimitTotal == null || coupon.TimesUsed < coupon.UsageLimitTotal))
+ {
+ discountAmount = coupon.DiscountType switch
+ {
+ Domain.Enums.DiscountType.Percentage => Math.Round(subTotal * (coupon.DiscountValue /100m),2),
+ Domain.Enums.DiscountType.FixedAmount => coupon.DiscountValue,
+ _ =>0
+ };
+ if (coupon.MaxDiscountAmount.HasValue)
+ discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
 
-        _db.Orders.Add(order);
-        _db.CartItems.RemoveRange(cartItems);
+ order.CouponId = coupon.Id;
+ order.CouponCode = coupon.Code;
+ coupon.TimesUsed +=1;
 
-        customer.TotalOrdersCount += 1;
-        customer.TotalSpent += order.TotalAmount;
-        customer.LastOrderDate = DateTime.UtcNow;
+ _db.CouponUsages.Add(new Domain.Entities.Marketing.CouponUsage
+ {
+ CouponId = coupon.Id,
+ OrderId = order.Id,
+ CustomerId = customer.Id,
+ DiscountAmountApplied = discountAmount
+ });
+ }
+ }
 
-        await _db.SaveChangesAsync(cancellationToken);
+ order.PaymentMethod = request.PaymentMethod;
+ order.SubTotal = subTotal;
+ order.DiscountAmount = discountAmount;
+ order.ShippingAmount =0; // shipping-method rate calculation intentionally out of scope for this endpoint
+ order.TaxAmount =0; // tax calculation intentionally out of scope for this endpoint
+ order.TotalAmount = subTotal - discountAmount + order.ShippingAmount + order.TaxAmount;
 
-        return OrderMapper.ToDto(order);
-    }
+ _db.Orders.Add(order);
+ _db.CartItems.RemoveRange(cartItems);
 
-    private static string GenerateOrderNumber()
-        => $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpperInvariant()}";
+ customer.TotalOrdersCount +=1;
+ customer.TotalSpent += order.TotalAmount;
+ customer.LastOrderDate = DateTime.UtcNow;
+
+ await _db.SaveChangesAsync(cancellationToken);
+
+ return OrderMapper.ToDto(order);
+ }
+
+ private static string GenerateOrderNumber()
+ => $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpperInvariant()}";
 }
