@@ -1,5 +1,124 @@
 [
   {
+    "ContainingType": "CommerceCore.Api.Controllers.AddressesController",
+    "Method": "GetAddresses",
+    "RelativePath": "api/v1/addresses",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IReadOnlyList\u00601[[CommerceCore.Domain.Entities.Customers.Address, CommerceCore.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.AddressesController",
+    "Method": "CreateAddress",
+    "RelativePath": "api/v1/addresses",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CommerceCore.Api.Models.AddressRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "CommerceCore.Domain.Entities.Customers.Address",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.AddressesController",
+    "Method": "GetAddress",
+    "RelativePath": "api/v1/addresses/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "CommerceCore.Domain.Entities.Customers.Address",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.AddressesController",
+    "Method": "UpdateAddress",
+    "RelativePath": "api/v1/addresses/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "CommerceCore.Api.Models.AddressRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "CommerceCore.Domain.Entities.Customers.Address",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.AddressesController",
+    "Method": "DeleteAddress",
+    "RelativePath": "api/v1/addresses/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CommerceCore.Api.Controllers.Generic.GenericCrudController\u00601[[CommerceCore.Domain.Entities.Catalog.AttributeValue, CommerceCore.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
     "Method": "GetAll",
     "RelativePath": "api/v1/attribute-values",

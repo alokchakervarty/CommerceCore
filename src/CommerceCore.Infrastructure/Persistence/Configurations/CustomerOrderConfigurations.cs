@@ -60,7 +60,8 @@ public class AddressConfiguration : IEntityTypeConfiguration<Address>
         builder.Property(a => a.Version).IsConcurrencyToken();
 
         // Make CountryId optional in the database and configure FK to Countries table
-        builder.HasOne<Country>()
+        builder.Property(a => a.CountryId).IsRequired(false);
+        builder.HasOne(a => a.Country)
             .WithMany()
             .HasForeignKey(a => a.CountryId)
             .OnDelete(DeleteBehavior.SetNull);
