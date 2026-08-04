@@ -23,6 +23,7 @@ Migrations/**/Snapshot.cs
 # Local secrets and config
 appsettings.Development.json
 secrets.json
+.env
 
 # Logs
 *.log

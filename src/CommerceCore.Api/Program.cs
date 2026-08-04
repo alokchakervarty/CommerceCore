@@ -39,6 +39,7 @@ try
         });
 
     builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddHttpClient();
 
     // ---------- API versioning ----------
     builder.Services.AddApiVersioning(options =>
@@ -108,7 +109,7 @@ try
         options.AddPolicy(CorsPolicy, policy =>
         {
             var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-                ?? new[] { "http://localhost:5173" };
+                ?? new[] { "http://localhost:5173", "http://localhost:5174" };
             policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
         });
     });
