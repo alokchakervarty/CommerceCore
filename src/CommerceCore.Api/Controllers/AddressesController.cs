@@ -7,6 +7,8 @@ using CommerceCore.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using CommerceCore.Api.Models;
+using CommerceCore.Domain.Enums;
 
 namespace CommerceCore.Api.Controllers;
 
@@ -50,19 +52,36 @@ public class AddressesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Address>> CreateAddress(Address address, CancellationToken cancellationToken)
+    public async Task<ActionResult<Address>> CreateAddress(AddressRequest request, CancellationToken cancellationToken)
     {
         var customer = await GetOrCreateCustomerAsync(cancellationToken);
 
+        ValidateAddressRequest(request);
+
+        var address = new Address
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customer.Id,
+            Customer = null,
+            FullName = request.FullName,
+            PhoneNumber = request.PhoneNumber,
+            AddressLine1 = request.AddressLine1,
+            AddressLine2 = request.AddressLine2,
+            City = request.City,
+            State = request.State,
+            PostalCode = request.PostalCode,
+            IsDefaultShipping = request.IsDefaultShipping,
+            IsDefaultBilling = request.IsDefaultBilling
+        };
+
+        // Type parsing: accept numeric or string names; default to Both.
+        address.Type = ParseAddressType(request.Type);
+
         // If country not provided, default to India (seeded Iso2Code == "IN")
-        if (address.CountryId == null || address.CountryId == Guid.Empty)
+        if (request.CountryId == null || request.CountryId == Guid.Empty)
             address.CountryId = await GetDefaultIndiaCountryIdAsync(cancellationToken);
-
-        ValidateAddress(address);
-
-        address.Id = Guid.NewGuid();
-        address.CustomerId = customer.Id;
-        address.Customer = null;
+        else
+            address.CountryId = request.CountryId;
 
         if (address.IsDefaultShipping)
             await ClearDefaultShippingAsync(customer.Id, cancellationToken);
@@ -79,17 +98,11 @@ public class AddressesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<Address>> UpdateAddress(Guid id, Address request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Address>> UpdateAddress(Guid id, AddressRequest request, CancellationToken cancellationToken)
     {
         var existing = await FindAddressAsync(id, cancellationToken);
 
-        // If country not provided in the request, default to India
-        if (request.CountryId == null || request.CountryId == Guid.Empty)
-            existing.CountryId = await GetDefaultIndiaCountryIdAsync(cancellationToken);
-        else
-            existing.CountryId = request.CountryId;
-
-        ValidateAddress(request);
+        ValidateAddressRequest(request);
 
         existing.FullName = request.FullName;
         existing.PhoneNumber = request.PhoneNumber;
@@ -98,9 +111,16 @@ public class AddressesController : ControllerBase
         existing.City = request.City;
         existing.State = request.State;
         existing.PostalCode = request.PostalCode;
-        existing.Type = request.Type;
         existing.IsDefaultShipping = request.IsDefaultShipping;
         existing.IsDefaultBilling = request.IsDefaultBilling;
+
+        existing.Type = ParseAddressType(request.Type);
+
+        // If country not provided in the request, default to India
+        if (request.CountryId == null || request.CountryId == Guid.Empty)
+            existing.CountryId = await GetDefaultIndiaCountryIdAsync(cancellationToken);
+        else
+            existing.CountryId = request.CountryId;
 
         if (request.IsDefaultShipping)
             await ClearDefaultShippingAsync(existing.CustomerId, cancellationToken);
@@ -116,6 +136,26 @@ public class AddressesController : ControllerBase
         _db.Addresses.Remove(existing);
         await _db.SaveChangesAsync(cancellationToken);
         return NoContent();
+    }
+
+    private static AddressType ParseAddressType(string? type)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+            return AddressType.Both;
+
+        // Try parse as name
+        if (Enum.TryParse<AddressType>(type, true, out var parsed))
+            return parsed;
+
+        // Try parse as numeric
+        if (int.TryParse(type, out var numeric))
+        {
+            if (Enum.IsDefined(typeof(AddressType), numeric))
+                return (AddressType)numeric;
+        }
+
+        // Fallback
+        return AddressType.Both;
     }
 
     private async Task<Address> FindAddressAsync(Guid id, CancellationToken cancellationToken)
@@ -183,29 +223,27 @@ public class AddressesController : ControllerBase
         return country.Id;
     }
 
-    private static void ValidateAddress(Address address)
+    private static void ValidateAddressRequest(AddressRequest request)
     {
         var errors = new Dictionary<string, string[]>();
 
-        if (string.IsNullOrWhiteSpace(address.FullName))
-            errors[nameof(address.FullName)] = new[] { "Full name is required." };
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            errors[nameof(request.FullName)] = new[] { "Full name is required." };
 
-        if (string.IsNullOrWhiteSpace(address.PhoneNumber))
-            errors[nameof(address.PhoneNumber)] = new[] { "Phone number is required." };
+        if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+            errors[nameof(request.PhoneNumber)] = new[] { "Phone number is required." };
 
-        if (string.IsNullOrWhiteSpace(address.AddressLine1))
-            errors[nameof(address.AddressLine1)] = new[] { "Street address is required." };
+        if (string.IsNullOrWhiteSpace(request.AddressLine1))
+            errors[nameof(request.AddressLine1)] = new[] { "Street address is required." };
 
-        if (string.IsNullOrWhiteSpace(address.City))
-            errors[nameof(address.City)] = new[] { "City is required." };
+        if (string.IsNullOrWhiteSpace(request.City))
+            errors[nameof(request.City)] = new[] { "City is required." };
 
-        if (string.IsNullOrWhiteSpace(address.State))
-            errors[nameof(address.State)] = new[] { "State is required." };
+        if (string.IsNullOrWhiteSpace(request.State))
+            errors[nameof(request.State)] = new[] { "State is required." };
 
-        if (string.IsNullOrWhiteSpace(address.PostalCode))
-            errors[nameof(address.PostalCode)] = new[] { "Postal code is required." };
-
-        // Country is optional from the API; controller ensures a default when missing.
+        if (string.IsNullOrWhiteSpace(request.PostalCode))
+            errors[nameof(request.PostalCode)] = new[] { "Postal code is required." };
 
         if (errors.Count > 0)
             throw new ValidationAppException(errors);
