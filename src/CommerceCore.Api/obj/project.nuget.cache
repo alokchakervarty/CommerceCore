@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "2dVKmevHTJc=",
+  "dgSpecHash": "E07Nop8J2Uk=",
   "success": true,
   "projectFilePath": "C:\\Users\\alokc\\source\\repos\\alokchakervarty\\CommerceCore\\src\\CommerceCore.Api\\CommerceCore.Api.csproj",
   "expectedPackageFiles": [
@@ -10,6 +10,7 @@
     "C:\\Users\\alokc\\.nuget\\packages\\asp.versioning.mvc.apiexplorer\\8.1.0\\asp.versioning.mvc.apiexplorer.8.1.0.nupkg.sha512",
     "C:\\Users\\alokc\\.nuget\\packages\\aspnetcore.healthchecks.npgsql\\8.0.2\\aspnetcore.healthchecks.npgsql.8.0.2.nupkg.sha512",
     "C:\\Users\\alokc\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
+    "C:\\Users\\alokc\\.nuget\\packages\\fluentftp\\54.2.0\\fluentftp.54.2.0.nupkg.sha512",
     "C:\\Users\\alokc\\.nuget\\packages\\fluentvalidation\\11.9.2\\fluentvalidation.11.9.2.nupkg.sha512",
     "C:\\Users\\alokc\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\11.9.2\\fluentvalidation.dependencyinjectionextensions.11.9.2.nupkg.sha512",
     "C:\\Users\\alokc\\.nuget\\packages\\mediatr\\12.4.0\\mediatr.12.4.0.nupkg.sha512",

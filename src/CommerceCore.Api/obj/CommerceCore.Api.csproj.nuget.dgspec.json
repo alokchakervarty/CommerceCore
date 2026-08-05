@@ -73,6 +73,10 @@
               "target": "Package",
               "version": "[8.0.2, )"
             },
+            "FluentFTP": {
+              "target": "Package",
+              "version": "[54.2.0, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[8.0.8, )"

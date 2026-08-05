@@ -1,6 +1,5 @@
-using System.Text;
-using System.Text.Json.Serialization;
 using Asp.Versioning;
+using CommerceCore.Api.Controllers;
 using CommerceCore.Api.Middleware;
 using CommerceCore.Application;
 using CommerceCore.Infrastructure;
@@ -10,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Text;
+using System.Text.Json.Serialization;
 
 // ---------- Serilog bootstrap (captures startup failures before the host is built) ----------
 Log.Logger = new LoggerConfiguration()
@@ -147,7 +148,8 @@ try
     // ---------- Health checks ----------
     builder.Services.AddHealthChecks()
         .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgresql");
-
+    builder.Services.Configure<FtpSettings>(
+    builder.Configuration.GetSection("FtpSettings"));
     var app = builder.Build();
 
     // ---------- Apply pending migrations automatically on startup (dev convenience;

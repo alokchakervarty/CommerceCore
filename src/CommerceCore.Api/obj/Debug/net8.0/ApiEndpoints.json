@@ -1,5 +1,26 @@
 [
   {
+    "ContainingType": "CommerceCore.Api.Controllers.PaymentsController",
+    "Method": "CreateOrder",
+    "RelativePath": "api/create-order",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CommerceCore.Api.Controllers.CreateRazorpayOrderRequest",
+        "IsRequired": true
+      },
+      {
+        "Name": "api-version",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CommerceCore.Api.Controllers.AddressesController",
     "Method": "GetAddresses",
     "RelativePath": "api/v1/addresses",
@@ -2287,6 +2308,22 @@
     ]
   },
   {
+    "ContainingType": "CommerceCore.Api.Controllers.FilesController",
+    "Method": "Upload",
+    "RelativePath": "api/v1/files/upload",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "file",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CommerceCore.Api.Controllers.Generic.PublicReadCrudController\u00601[[CommerceCore.Domain.Entities.Reference.Language, CommerceCore.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
     "Method": "GetAll",
     "RelativePath": "api/v1/languages",
@@ -4551,5 +4588,26 @@
         "StatusCode": 204
       }
     ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.PaymentsController",
+    "Method": "VerifyPayment",
+    "RelativePath": "api/verify-payment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CommerceCore.Api.Controllers.VerifyRazorpayPaymentRequest",
+        "IsRequired": true
+      },
+      {
+        "Name": "api-version",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
   }
 ]

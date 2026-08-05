@@ -159,3 +159,5 @@ C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\ob
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\obj\Debug\net8.0\CommerceCore.Api.pdb
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\obj\Debug\net8.0\CommerceCore.Api.genruntimeconfig.cache
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\obj\Debug\net8.0\ref\CommerceCore.Api.dll
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\obj\Debug\net8.0\CommerceCore.Api.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\bin\Debug\net8.0\FluentFTP.dll
