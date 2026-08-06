@@ -5,6 +5,7 @@ using CommerceCore.Shared.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace CommerceCore.Application.Features.Cart;
 
@@ -190,36 +191,78 @@ public class RemoveCartItemCommandHandler : IRequestHandler<RemoveCartItemComman
 
 internal static class CartMapper
 {
-    public static async Task<CartResponse> ToResponseAsync(IApplicationDbContext db, CartOwner owner, CancellationToken cancellationToken)
+    public static async Task<CartResponse> ToResponseAsync(
+        IApplicationDbContext db,
+        CartOwner owner,
+        CancellationToken cancellationToken)
     {
         var rawItems = await db.CartItems
             .Include(ci => ci.Product)
             .Include(ci => ci.ProductVariant)
-            .Where(ci => owner.CustomerId != null ? ci.CustomerId == owner.CustomerId : ci.GuestId == owner.GuestId)
+            .Where(ci => owner.CustomerId != null
+                ? ci.CustomerId == owner.CustomerId
+                : ci.GuestId == owner.GuestId)
             .ToListAsync(cancellationToken);
 
-        var variantIds = rawItems.Select(i => i.ProductVariantId).ToList();
+        var variantIds = rawItems
+            .Select(i => i.ProductVariantId)
+            .Distinct()
+            .ToList();
+
+        // Available stock
         var stockByVariant = await db.InventoryItems
             .Where(i => variantIds.Contains(i.ProductVariantId))
             .GroupBy(i => i.ProductVariantId)
-            .Select(g => new { ProductVariantId = g.Key, Available = g.Sum(i => i.QuantityOnHand - i.QuantityReserved) })
-            .ToDictionaryAsync(x => x.ProductVariantId, x => x.Available, cancellationToken);
+            .Select(g => new
+            {
+                ProductVariantId = g.Key,
+                Available = g.Sum(i => i.QuantityOnHand - i.QuantityReserved)
+            })
+            .ToDictionaryAsync(
+                x => x.ProductVariantId,
+                x => x.Available,
+                cancellationToken);
+
+        // Image lookup from ProductImages table
+        var imageLookup = await db.ProductImages
+    .Where(pi => pi.ProductVariantId.HasValue &&
+                 variantIds.Contains(pi.ProductVariantId.Value))
+    .GroupBy(pi => pi.ProductVariantId!.Value)
+    .Select(g => new
+    {
+        ProductVariantId = g.Key,
+        ImageUrl = g.Select(x => x.Url).FirstOrDefault()
+    })
+    .ToDictionaryAsync(
+        x => x.ProductVariantId,
+        x => x.ImageUrl,
+        cancellationToken);
 
         var items = rawItems.Select(ci =>
         {
             var unitPrice = ci.ProductVariant?.Price ?? ci.Product?.BasePrice ?? 0;
+
+            imageLookup.TryGetValue(ci.ProductVariantId, out var imageUrl);
+
             return new CartItemDto(
                 ci.Id,
                 ci.ProductId,
                 ci.ProductVariantId,
                 ci.Product?.Name ?? string.Empty,
-                ci.ProductVariant?.IsDefault == true ? null : ci.ProductVariant?.DisplayName,
-                ci.ProductVariant?.ImageUrl,
+                ci.ProductVariant?.IsDefault == true
+                    ? null
+                    : ci.ProductVariant?.DisplayName,
+                imageUrl,
                 unitPrice,
                 ci.Quantity,
-                stockByVariant.TryGetValue(ci.ProductVariantId, out var stock) ? stock : 0);
+                stockByVariant.TryGetValue(ci.ProductVariantId, out var stock)
+                    ? stock
+                    : 0);
         }).ToList();
 
-        return new CartResponse(items, items.Sum(i => i.UnitPrice * i.Quantity), items.Sum(i => i.Quantity));
+        return new CartResponse(
+            items,
+            items.Sum(i => i.UnitPrice * i.Quantity),
+            items.Sum(i => i.Quantity));
     }
 }
