@@ -106,6 +106,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
                 product.Images.Add(new ProductImage
                 {
                     Product = product,
+                    ProductVariant= defaultVariant,
                     Url = url,
                     DisplayOrder = order,
                     IsPrimary = order == 0
