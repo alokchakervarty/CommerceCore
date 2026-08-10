@@ -1,8 +1,8 @@
 using CommerceCore.Domain.Entities.Customers;
 using CommerceCore.Domain.Entities.Orders;
-using CommerceCore.Domain.Entities.Reference;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using CommerceCore.Domain.Entities.Reference;
 
 namespace CommerceCore.Infrastructure.Persistence.Configurations;
 
@@ -58,13 +58,13 @@ public class AddressConfiguration : IEntityTypeConfiguration<Address>
         builder.Property(a => a.State).HasMaxLength(100).IsRequired();
         builder.Property(a => a.PostalCode).HasMaxLength(20).IsRequired();
         builder.Property(a => a.Version).IsConcurrencyToken();
-
         // Make CountryId optional in the database and configure FK to Countries table
         builder.Property(a => a.CountryId).IsRequired(false);
         builder.HasOne(a => a.Country)
             .WithMany()
             .HasForeignKey(a => a.CountryId)
             .OnDelete(DeleteBehavior.SetNull);
+
     }
 }
 
@@ -122,7 +122,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.PaymentStatus).HasConversion<string>().HasMaxLength(30);
         builder.Property(o => o.CurrencyCode).HasMaxLength(10).IsRequired();
 
-        foreach (var money in new[] { nameof(Order.SubTotal), nameof(Order.DiscountAmount), nameof(Order.ShippingAmount), nameof(Order.TaxAmount), nameof(Order.TotalAmount) })
+        foreach (var money in new[] { nameof(Order.SubTotal), nameof(Order.DiscountAmount), nameof(Order.ShippingAmount), nameof(Order.TaxAmount), nameof(Order.TotalAmount), nameof(Order.TotalCgstAmount), nameof(Order.TotalSgstAmount), nameof(Order.TotalIgstAmount) })
             builder.Property(money).HasColumnType("decimal(14,2)");
 
         builder.Property(o => o.CouponCode).HasMaxLength(50);
@@ -170,9 +170,14 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.Property(oi => oi.VariantDisplayNameSnapshot).HasMaxLength(300);
         builder.Property(oi => oi.SkuSnapshot).HasMaxLength(100).IsRequired();
         builder.Property(oi => oi.ImageUrlSnapshot).HasMaxLength(1000);
+        builder.Property(oi => oi.HsnCodeSnapshot).HasMaxLength(20);
         builder.Property(oi => oi.UnitPrice).HasColumnType("decimal(12,2)");
         builder.Property(oi => oi.DiscountAmount).HasColumnType("decimal(12,2)");
         builder.Property(oi => oi.TaxAmount).HasColumnType("decimal(12,2)");
+        builder.Property(oi => oi.GstRatePercentageSnapshot).HasColumnType("decimal(5,2)");
+        builder.Property(oi => oi.CgstAmount).HasColumnType("decimal(12,2)");
+        builder.Property(oi => oi.SgstAmount).HasColumnType("decimal(12,2)");
+        builder.Property(oi => oi.IgstAmount).HasColumnType("decimal(12,2)");
         builder.Property(oi => oi.Version).IsConcurrencyToken();
 
         builder.HasOne(oi => oi.Product)

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using QuestPDF.Infrastructure;
 
 namespace CommerceCore.Infrastructure;
 
@@ -12,6 +13,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // QuestPDF's Community license is free under $1M USD annual gross revenue —
+        // see the licensing note in QuestPdfInvoiceGenerator.cs before relying on
+        // this in production above that threshold.
+        QuestPDF.Settings.License = LicenseType.Community;
+
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
@@ -31,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<ISmsSender, LoggingSmsSender>();
+        services.AddScoped<IInvoicePdfGenerator, QuestPdfInvoiceGenerator>();
 
         return services;
     }

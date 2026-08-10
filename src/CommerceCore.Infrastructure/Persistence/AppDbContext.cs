@@ -1,5 +1,6 @@
 using System.Reflection;
 using CommerceCore.Application.Common.Interfaces;
+using CommerceCore.Domain.Entities.Billing;
 using CommerceCore.Domain.Entities.Catalog;
 using CommerceCore.Domain.Entities.Cms;
 using CommerceCore.Domain.Entities.Customers;
@@ -77,6 +78,10 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+    // ---- Billing (Indian GST invoicing) ----
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
 
     // ---- Payments / Marketing / Reviews ----
     public DbSet<Payment> Payments => Set<Payment>();

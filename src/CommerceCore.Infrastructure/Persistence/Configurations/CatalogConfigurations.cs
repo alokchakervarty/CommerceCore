@@ -97,6 +97,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.WidthCm).HasColumnType("decimal(10,2)");
         builder.Property(p => p.HeightCm).HasColumnType("decimal(10,2)");
 
+        builder.Property(p => p.HsnCode).HasMaxLength(20);
+        builder.Property(p => p.GstRatePercentage).HasColumnType("decimal(5,2)");
+
         builder.Property(p => p.Version).IsConcurrencyToken();
 
         builder.HasIndex(p => new { p.StoreId, p.Slug }).IsUnique();

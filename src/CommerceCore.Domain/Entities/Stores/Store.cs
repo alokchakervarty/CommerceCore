@@ -62,6 +62,21 @@ public class StoreSettings : BaseEntity
     // Tax
     public bool PricesIncludeTax { get; set; }
     public Guid? DefaultTaxId { get; set; }
+
+    // Indian GST billing — the seller's registration details, needed on every tax
+    // invoice. Kept here (not on Store) since it's configuration, not identity.
+    public string? GstNumber { get; set; }              // 15-character GSTIN
+    public string? PanNumber { get; set; }
+    public string? LegalBusinessName { get; set; }        // may differ from the storefront-facing Store.Name
+    public string? RegisteredAddressLine1 { get; set; }
+    public string? RegisteredAddressLine2 { get; set; }
+    public string? RegisteredCity { get; set; }
+
+    /// <summary>The seller's registered State — this is what determines whether a
+    /// sale is intra-state (CGST+SGST) or inter-state (IGST): compared against the
+    /// buyer's shipping state at checkout. See GstCalculator.</summary>
+    public Guid? RegisteredStateId { get; set; }
+    public string? RegisteredPostalCode { get; set; }
 }
 
 /// <summary>One-to-one visual theming for a Store's storefront.</summary>

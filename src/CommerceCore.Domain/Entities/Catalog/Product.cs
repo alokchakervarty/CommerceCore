@@ -1,5 +1,6 @@
-using CommerceCore.Shared.Entities;
 using CommerceCore.Domain.Entities.Orders;
+using CommerceCore.Shared.Entities;
+
 namespace CommerceCore.Domain.Entities.Catalog;
 
 /// <summary>
@@ -42,7 +43,15 @@ public class Product : BaseEntity, IStoreScoped
     public Guid? BrandId { get; set; }
     public Brand? Brand { get; set; }
 
-    public Guid? TaxId { get; set; }               // FK into reference Taxes table (later batch)
+    public Guid? TaxId { get; set; }               // FK into reference Taxes table (generic, multi-country)
+
+    /// <summary>Harmonized System of Nomenclature code — required on an Indian GST
+    /// tax invoice for goods. Deliberately separate from the generic Tax table above:
+    /// GST needs a single flat rate per product (5/12/18/28%) that gets split into
+    /// CGST+SGST or IGST at invoice time, which doesn't fit the generic multi-country
+    /// Tax model cleanly. See GstCalculator.</summary>
+    public string? HsnCode { get; set; }
+    public decimal? GstRatePercentage { get; set; }   // e.g. 18 for 18% GST
 
     public double AverageRating { get; set; }
     public int ReviewCount { get; set; }

@@ -1,3 +1,5 @@
+using CommerceCore.Contracts.Billing;
+
 namespace CommerceCore.Application.Common.Interfaces;
 
 /// <summary>Read-only access to the authenticated caller, populated by Api middleware
@@ -55,4 +57,11 @@ public interface IEmailSender
 public interface ISmsSender
 {
     Task SendAsync(string toPhoneNumber, string message, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Renders a GST tax invoice as a PDF byte array. Implemented in
+/// Infrastructure using QuestPDF.</summary>
+public interface IInvoicePdfGenerator
+{
+    byte[] Generate(InvoiceDto invoice);
 }

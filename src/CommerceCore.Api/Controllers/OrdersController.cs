@@ -1,5 +1,7 @@
 using Asp.Versioning;
+using CommerceCore.Application.Features.Billing;
 using CommerceCore.Application.Features.Orders;
+using CommerceCore.Contracts.Billing;
 using CommerceCore.Contracts.Common;
 using CommerceCore.Contracts.Orders;
 using CommerceCore.Shared.Responses;
@@ -46,6 +48,22 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(typeof(OrderDto), 200)]
     public async Task<ActionResult<OrderDto>> Cancel(Guid id, CancellationToken cancellationToken)
         => Ok(await _mediator.Send(new CancelOrderCommand(id), cancellationToken));
+
+    /// <summary>Returns the GST tax invoice for this order as structured JSON —
+    /// same ownership rules as GetById (owner or Admin/StoreAdmin).</summary>
+    [HttpGet("{id:guid}/invoice")]
+    [ProducesResponseType(typeof(InvoiceDto), 200)]
+    public async Task<ActionResult<InvoiceDto>> GetInvoice(Guid id, CancellationToken cancellationToken)
+        => Ok(await _mediator.Send(new GetInvoiceQuery(id), cancellationToken));
+
+    /// <summary>Returns the same invoice rendered as a downloadable PDF.</summary>
+    [HttpGet("{id:guid}/invoice/pdf")]
+    [Produces("application/pdf")]
+    public async Task<IActionResult> GetInvoicePdf(Guid id, CancellationToken cancellationToken)
+    {
+        var pdfBytes = await _mediator.Send(new GetInvoicePdfQuery(id), cancellationToken);
+        return File(pdfBytes, "application/pdf", $"invoice-{id}.pdf");
+    }
 
     [Authorize(Roles = "Admin,StoreAdmin")]
     [HttpGet]

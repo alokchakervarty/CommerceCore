@@ -1,3 +1,4 @@
+using CommerceCore.Domain.Entities.Billing;
 using CommerceCore.Domain.Entities.Catalog;
 using CommerceCore.Domain.Entities.Customers;
 using CommerceCore.Domain.Entities.Identity;
@@ -21,6 +22,7 @@ namespace CommerceCore.Application.Common.Interfaces;
 public interface IApplicationDbContext
 {
     DbSet<Store> Stores { get; }
+    DbSet<StoreSettings> StoreSettings { get; }
 
     DbSet<User> Users { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
@@ -49,6 +51,8 @@ public interface IApplicationDbContext
 
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
+    DbSet<Invoice> Invoices { get; }
+    DbSet<InvoiceSequence> InvoiceSequences { get; }
 
     DbSet<Payment> Payments { get; }
     DbSet<PaymentTransaction> PaymentTransactions { get; }

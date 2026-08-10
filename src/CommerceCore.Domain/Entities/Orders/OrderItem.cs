@@ -29,11 +29,22 @@ public class OrderItem : BaseEntity
     public string? VariantDisplayNameSnapshot { get; set; }   // e.g. "50ml / Red"
     public string SkuSnapshot { get; set; } = string.Empty;
     public string? ImageUrlSnapshot { get; set; }
+    public string? HsnCodeSnapshot { get; set; }               // snapshotted from Product.HsnCode for GST invoicing
 
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal TaxAmount { get; set; }
+
+    // Indian GST breakdown. Exactly one pair is populated per Order (never both) —
+    // CgstAmount+SgstAmount for an intra-state sale, IgstAmount for inter-state —
+    // decided once for the whole Order by GstCalculator at checkout, based on the
+    // seller's registered state vs. the buyer's shipping state. TaxAmount above
+    // always equals CgstAmount + SgstAmount + IgstAmount for this line.
+    public decimal GstRatePercentageSnapshot { get; set; }    // snapshotted from Product.GstRatePercentage
+    public decimal CgstAmount { get; set; }
+    public decimal SgstAmount { get; set; }
+    public decimal IgstAmount { get; set; }
 
     public decimal LineTotal => (UnitPrice * Quantity) - DiscountAmount + TaxAmount;
 }

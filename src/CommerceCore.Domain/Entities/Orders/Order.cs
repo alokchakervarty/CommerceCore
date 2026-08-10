@@ -31,6 +31,13 @@ public class Order : BaseEntity, IStoreScoped
     public decimal TaxAmount { get; set; }
     public decimal TotalAmount { get; set; }
 
+    // Indian GST aggregates — sums of the corresponding OrderItem fields, kept here
+    // too so an invoice's totals section doesn't need to re-sum every line every time.
+    public bool IsInterStateSupply { get; set; }   // true = IGST applies; false = CGST+SGST
+    public decimal TotalCgstAmount { get; set; }
+    public decimal TotalSgstAmount { get; set; }
+    public decimal TotalIgstAmount { get; set; }
+
     public Guid? CouponId { get; set; }
     public string? CouponCode { get; set; }   // snapshotted so history reads correctly if the coupon is later deleted
 
@@ -68,6 +75,5 @@ public class Order : BaseEntity, IStoreScoped
     public string? CancelReason { get; set; }
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-
     public string? PaymentMethod { get; set; }
 }

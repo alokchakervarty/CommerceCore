@@ -39,6 +39,14 @@ public class StoreSettingsConfiguration : IEntityTypeConfiguration<StoreSettings
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Version).IsConcurrencyToken();
         builder.HasIndex(s => s.StoreId).IsUnique();
+
+        builder.Property(s => s.GstNumber).HasMaxLength(15);
+        builder.Property(s => s.PanNumber).HasMaxLength(10);
+        builder.Property(s => s.LegalBusinessName).HasMaxLength(300);
+        builder.Property(s => s.RegisteredAddressLine1).HasMaxLength(255);
+        builder.Property(s => s.RegisteredAddressLine2).HasMaxLength(255);
+        builder.Property(s => s.RegisteredCity).HasMaxLength(100);
+        builder.Property(s => s.RegisteredPostalCode).HasMaxLength(20);
     }
 }
 
