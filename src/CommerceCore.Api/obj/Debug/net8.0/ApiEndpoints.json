@@ -3170,6 +3170,48 @@
   },
   {
     "ContainingType": "CommerceCore.Api.Controllers.OrdersController",
+    "Method": "GetInvoice",
+    "RelativePath": "api/v1/orders/{id}/invoice",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "CommerceCore.Contracts.Billing.InvoiceDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.OrdersController",
+    "Method": "GetInvoicePdf",
+    "RelativePath": "api/v1/orders/{id}/invoice/pdf",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CommerceCore.Api.Controllers.OrdersController",
     "Method": "UpdateStatus",
     "RelativePath": "api/v1/orders/{id}/status",
     "HttpMethod": "PUT",

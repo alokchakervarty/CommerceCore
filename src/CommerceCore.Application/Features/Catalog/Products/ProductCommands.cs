@@ -21,6 +21,8 @@ public record CreateProductCommand(
     Guid CategoryId,
     Guid? BrandId,
     IReadOnlyList<string>? ImageUrls,
+    string? HsnCode,
+    decimal? GstRatePercentage,
     int InitialStock = 0,
     Guid? WarehouseId = null) : IRequest<ProductDto>;
 
@@ -82,6 +84,8 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             TrackInventory = request.TrackInventory,
             CategoryId = request.CategoryId,
             BrandId = request.BrandId,
+            HsnCode = request.HsnCode,
+            GstRatePercentage = request.GstRatePercentage,
             HasVariants = false,
             IsActive = true
         };
@@ -181,7 +185,9 @@ public record UpdateProductCommand(
     bool IsActive,
     bool IsFeatured,
     Guid CategoryId,
-    Guid? BrandId) : IRequest<ProductDto>;
+    Guid? BrandId,
+    string? HsnCode,
+    decimal? GstRatePercentage) : IRequest<ProductDto>;
 
 public class UpdateProductCommandValidator : AbstractValidator<UpdateProductCommand>
 {
@@ -228,6 +234,8 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.IsFeatured = request.IsFeatured;
         product.CategoryId = request.CategoryId;
         product.BrandId = request.BrandId;
+        product.HsnCode = request.HsnCode;
+        product.GstRatePercentage = request.GstRatePercentage;
         product.ModifiedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);

@@ -149,17 +149,16 @@ public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, OrderDto>
 
         foreach (var ci in cartItems)
         {
-            var unitPrice = ci.ProductVariant?.Price ?? ci.Product?.BasePrice ?? 0;
-            var lineTaxableValue = unitPrice * ci.Quantity;
+            var unitGrossPrice = ci.ProductVariant?.Price ?? ci.Product?.BasePrice ?? 0;
+            var gstRate = ci.Product?.GstRatePercentage ?? 0;
+            var unitTaxablePrice = GstCalculator.GetTaxableValueFromGross(unitGrossPrice, gstRate);
+            var lineTaxableValue = unitTaxablePrice * ci.Quantity;
             subTotal += lineTaxableValue;
 
-            // GST is calculated on the pre-discount line value: any order-level
-            // coupon discount (below) is a marketing deduction from the payable
-            // total, not a reduction to the taxable value declared on the invoice —
-            // a deliberate simplification for a B2C flat-rate-per-product model
-            // rather than apportioning discount across lines for tax purposes.
-            var gstRate = ci.Product?.GstRatePercentage ?? 0;
-            var gst = GstCalculator.Calculate(lineTaxableValue, gstRate, isInterState);
+            // GST is calculated on the final tax-inclusive price by reverse
+            // engineering the taxable value and then splitting tax into CGST/SGST
+            // or IGST while preserving the original rounded gross amount.
+            var gst = GstCalculator.CalculateFromGross(unitGrossPrice * ci.Quantity, gstRate, isInterState);
             totalCgst += gst.Cgst;
             totalSgst += gst.Sgst;
             totalIgst += gst.Igst;
@@ -173,7 +172,7 @@ public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, OrderDto>
                 SkuSnapshot = ci.ProductVariant?.Sku ?? string.Empty,
                 ImageUrlSnapshot = ci.ProductVariant?.ImageUrl,
                 HsnCodeSnapshot = ci.Product?.HsnCode,
-                UnitPrice = unitPrice,
+                UnitPrice = unitTaxablePrice,
                 Quantity = ci.Quantity,
                 GstRatePercentageSnapshot = gstRate,
                 CgstAmount = gst.Cgst,

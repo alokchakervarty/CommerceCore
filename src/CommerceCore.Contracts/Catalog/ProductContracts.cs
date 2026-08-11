@@ -52,6 +52,8 @@ public record ProductDto(
     string? CategoryName,
     Guid? BrandId,
     string? BrandName,
+    string? HsnCode,
+    decimal? GstRatePercentage,
     IReadOnlyList<string> ImageUrls,
     IReadOnlyList<ProductAttributeDto> Attributes,
     IReadOnlyList<ProductVariantDto> Variants);
@@ -68,6 +70,8 @@ public record CreateProductRequest(
     Guid CategoryId,
     Guid? BrandId,
     IReadOnlyList<string>? ImageUrls,
+    string? HsnCode,
+    decimal? GstRatePercentage,
     int InitialStock = 0,
     Guid? WarehouseId = null);
 
@@ -82,7 +86,9 @@ public record UpdateProductRequest(
     bool IsActive,
     bool IsFeatured,
     Guid CategoryId,
-    Guid? BrandId);
+    Guid? BrandId,
+    string? HsnCode,
+    decimal? GstRatePercentage);
 
 public record ProductListQuery
 {

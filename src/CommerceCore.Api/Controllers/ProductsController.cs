@@ -39,7 +39,7 @@ public class ProductsController : ControllerBase
             request.Name, request.ShortDescription, request.Description, request.Sku,
             request.BasePrice, request.CompareAtPrice, request.CostPrice, request.TrackInventory,
             request.CategoryId, request.BrandId, request.ImageUrls,
-            request.InitialStock, request.WarehouseId), cancellationToken);
+            request.HsnCode, request.GstRatePercentage, request.InitialStock, request.WarehouseId), cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id, version = "1.0" }, result);
     }
@@ -52,7 +52,8 @@ public class ProductsController : ControllerBase
         var result = await _mediator.Send(new UpdateProductCommand(
             id, request.Name, request.ShortDescription, request.Description,
             request.BasePrice, request.CompareAtPrice, request.CostPrice, request.TrackInventory,
-            request.IsActive, request.IsFeatured, request.CategoryId, request.BrandId), cancellationToken);
+            request.IsActive, request.IsFeatured, request.CategoryId, request.BrandId,
+            request.HsnCode, request.GstRatePercentage), cancellationToken);
 
         return Ok(result);
     }

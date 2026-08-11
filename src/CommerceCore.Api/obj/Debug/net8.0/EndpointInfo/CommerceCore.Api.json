@@ -4947,6 +4947,69 @@
         }
       }
     },
+    "/api/v1/orders/{id}/invoice": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/invoice/pdf": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/orders": {
       "get": {
         "tags": [
@@ -9827,6 +9890,180 @@
         },
         "additionalProperties": false
       },
+      "InvoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "financialYear": {
+            "type": "string",
+            "nullable": true
+          },
+          "invoiceDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sellerLegalName": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerGstNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerPanNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerAddressLine1": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerAddressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerState": {
+            "type": "string",
+            "nullable": true
+          },
+          "sellerPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerAddressLine1": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerAddressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerState": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerPhoneNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "isInterStateSupply": {
+            "type": "boolean"
+          },
+          "placeOfSupplyState": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxableValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalSgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalIgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDiscountAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceItemDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InvoiceItemDto": {
+        "type": "object",
+        "properties": {
+          "productName": {
+            "type": "string",
+            "nullable": true
+          },
+          "variantDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "hsnCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taxableValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "gstRatePercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "cgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "sgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "igstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "lineTotal": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "Language": {
         "type": "object",
         "properties": {
@@ -10533,6 +10770,21 @@
             "type": "number",
             "format": "double"
           },
+          "isInterStateSupply": {
+            "type": "boolean"
+          },
+          "totalCgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalSgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalIgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
           "couponId": {
             "type": "string",
             "format": "uuid",
@@ -10878,6 +11130,10 @@
             "type": "string",
             "nullable": true
           },
+          "hsnCodeSnapshot": {
+            "type": "string",
+            "nullable": true
+          },
           "unitPrice": {
             "type": "number",
             "format": "double"
@@ -10891,6 +11147,22 @@
             "format": "double"
           },
           "taxAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "gstRatePercentageSnapshot": {
+            "type": "number",
+            "format": "double"
+          },
+          "cgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "sgstAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "igstAmount": {
             "type": "number",
             "format": "double"
           },
@@ -11295,6 +11567,15 @@
           "taxId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "hsnCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstRatePercentage": {
+            "type": "number",
+            "format": "double",
             "nullable": true
           },
           "averageRating": {

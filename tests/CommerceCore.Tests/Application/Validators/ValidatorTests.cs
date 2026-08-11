@@ -46,7 +46,7 @@ public class CreateProductCommandValidatorTests
     public void Should_Fail_When_Price_Is_Zero_Or_Negative()
     {
         var command = new CreateProductCommand(
-            "Test Product", null, null, null, 0m, null, null, true, Guid.NewGuid(), null, null);
+            "Test Product", null, null, null, 0m, null, null, true, Guid.NewGuid(), null, null, null, null);
 
         var result = _validator.Validate(command);
         result.IsValid.Should().BeFalse();
@@ -57,7 +57,7 @@ public class CreateProductCommandValidatorTests
     public void Should_Fail_When_Name_Is_Empty()
     {
         var command = new CreateProductCommand(
-            "", null, null, null, 19.99m, null, null, true, Guid.NewGuid(), null, null);
+            "", null, null, null, 19.99m, null, null, true, Guid.NewGuid(), null, null, null, null);
 
         var result = _validator.Validate(command);
         result.IsValid.Should().BeFalse();
@@ -68,7 +68,7 @@ public class CreateProductCommandValidatorTests
     {
         var command = new CreateProductCommand(
             "Midnight Oud Perfume", "A rich, woody fragrance", "Full description here", "OUD-001",
-            49.99m, 59.99m, 20.00m, true, Guid.NewGuid(), null, new[] { "https://example.com/image.jpg" });
+            49.99m, 59.99m, 20.00m, true, Guid.NewGuid(), null, new[] { "https://example.com/image.jpg" }, null, null);
 
         var result = _validator.Validate(command);
         result.IsValid.Should().BeTrue();

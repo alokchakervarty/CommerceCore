@@ -79,6 +79,8 @@ internal static class ProductMapper
             product.Category?.Name,
             product.BrandId,
             product.Brand?.Name,
+            product.HsnCode,
+            product.GstRatePercentage,
             product.Images.OrderBy(i => i.DisplayOrder).Select(i => i.Url).ToList(),
             productAttributes,
             variantDtos);
