@@ -35,6 +35,8 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeService, DateTimeService>();
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.Configure<EmailApiSettings>(configuration);
+        services.AddHttpClient<IEmailApiSender, EmailApiSender>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<ISmsSender, LoggingSmsSender>();
         services.AddScoped<IInvoicePdfGenerator, QuestPdfInvoiceGenerator>();

@@ -50,6 +50,11 @@ public interface IEmailSender
     Task SendAsync(Guid storeId, string toAddress, string subject, string htmlBody, CancellationToken cancellationToken = default);
 }
 
+public interface IEmailApiSender
+{
+    Task SendAsync(string toAddress, string subject, string htmlBody, CancellationToken cancellationToken = default);
+}
+
 /// <summary>Sends an SMS. The default Infrastructure implementation logs the message
 /// rather than calling a real carrier — no SMS provider (Twilio, etc.) is configured
 /// out of the box. Swap in a real provider by implementing this interface and

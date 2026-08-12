@@ -43,17 +43,17 @@ public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, OtpRe
     private readonly IApplicationDbContext _db;
     private readonly ICurrentTenantService _tenant;
     private readonly IPasswordHasher _passwordHasher; // reused for hashing the OTP itself
-    private readonly IEmailSender _emailSender;
+    private readonly IEmailApiSender _emailApiSender;
     private readonly ISmsSender _smsSender;
 
     public RequestOtpCommandHandler(
         IApplicationDbContext db, ICurrentTenantService tenant, IPasswordHasher passwordHasher,
-        IEmailSender emailSender, ISmsSender smsSender)
+        IEmailApiSender emailApiSender, ISmsSender smsSender)
     {
         _db = db;
         _tenant = tenant;
         _passwordHasher = passwordHasher;
-        _emailSender = emailSender;
+        _emailApiSender = emailApiSender;
         _smsSender = smsSender;
     }
 
@@ -79,7 +79,7 @@ public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, OtpRe
             throw new BusinessRuleException($"Please wait {waitSeconds} second(s) before requesting another code.");
         }
 
-        var code = "123456";//GenerateNumericCode(CodeLength);
+        var code = GenerateNumericCode(CodeLength);
         var expiresAt = DateTime.UtcNow.Add(CodeLifetime);
 
         _db.OtpCodes.Add(new OtpCode
@@ -96,10 +96,11 @@ public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, OtpRe
 
         if (channel == NotificationChannel.Email)
         {
-            //await _emailSender.SendAsync(
-              //  storeId, identifier, "Your login code",
-               // $"<p>Your login code is:</p><h2>{code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
-                //cancellationToken);
+            await _emailApiSender.SendAsync(
+                identifier,
+                "Your login code",
+                $"<p>Your login code is:</p><h2>{code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>",
+                cancellationToken);
             return new OtpRequestedResponse($"A login code has been sent via {channel}.", expiresAt);
         }
         else

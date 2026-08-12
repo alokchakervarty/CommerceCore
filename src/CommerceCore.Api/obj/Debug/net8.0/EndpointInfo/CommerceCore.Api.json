@@ -9269,6 +9269,15 @@
             },
             "nullable": true
           },
+          "hsnCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstRatePercentage": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "initialStock": {
             "type": "integer",
             "format": "int32"
@@ -11802,6 +11811,15 @@
             "type": "string",
             "nullable": true
           },
+          "hsnCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstRatePercentage": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "imageUrls": {
             "type": "array",
             "items": {
@@ -13281,6 +13299,15 @@
           "brandId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "hsnCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstRatePercentage": {
+            "type": "number",
+            "format": "double",
             "nullable": true
           }
         },
