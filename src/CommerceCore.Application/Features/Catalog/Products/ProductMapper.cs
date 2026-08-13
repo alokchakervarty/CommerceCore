@@ -68,6 +68,7 @@ internal static class ProductMapper
             product.Slug,
             product.ShortDescription,
             product.Description,
+            product.Sku,
             product.BasePrice,
             product.CompareAtPrice,
             product.HasVariants,

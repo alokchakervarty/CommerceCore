@@ -9236,6 +9236,10 @@
             "type": "string",
             "nullable": true
           },
+          "packSize": {
+            "type": "string",
+            "nullable": true
+          },
           "basePrice": {
             "type": "number",
             "format": "double"
@@ -11768,6 +11772,10 @@
             "type": "string",
             "nullable": true
           },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
           "basePrice": {
             "type": "number",
             "format": "double"
@@ -13269,6 +13277,10 @@
             "type": "string",
             "nullable": true
           },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
           "basePrice": {
             "type": "number",
             "format": "double"
@@ -13299,6 +13311,17 @@
           "brandId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "imageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "packSize": {
+            "type": "string",
             "nullable": true
           },
           "hsnCode": {

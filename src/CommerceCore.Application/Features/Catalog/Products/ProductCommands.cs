@@ -24,7 +24,8 @@ public record CreateProductCommand(
     string? HsnCode,
     decimal? GstRatePercentage,
     int InitialStock = 0,
-    Guid? WarehouseId = null) : IRequest<ProductDto>;
+    Guid? WarehouseId = null,
+    string? PackSize = null) : IRequest<ProductDto>;
 
 public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
 {
@@ -98,7 +99,9 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             Sku = request.Sku ?? $"SKU-{Guid.NewGuid().ToString()[..8].ToUpperInvariant()}",
             IsDefault = true,
             IsActive = true,
-            DisplayName = product.Name
+            DisplayName = string.IsNullOrWhiteSpace(request.PackSize)
+                ? product.Name
+                : $"{product.Name} ({request.PackSize.Trim()})"
         };
         product.Variants.Add(defaultVariant);
 
@@ -178,6 +181,7 @@ public record UpdateProductCommand(
     string Name,
     string? ShortDescription,
     string? Description,
+    string? Sku,
     decimal BasePrice,
     decimal? CompareAtPrice,
     decimal? CostPrice,
@@ -186,6 +190,8 @@ public record UpdateProductCommand(
     bool IsFeatured,
     Guid CategoryId,
     Guid? BrandId,
+    IReadOnlyList<string>? ImageUrls,
+    string? PackSize,
     string? HsnCode,
     decimal? GstRatePercentage) : IRequest<ProductDto>;
 
@@ -212,7 +218,10 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
 
     public async Task<ProductDto> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
     {
-        var product = await _db.Products.FirstOrDefaultAsync(
+        var product = await _db.Products
+            .Include(p => p.Variants)
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync(
             p => p.Id == request.Id && p.StoreId == _tenant.StoreId, cancellationToken)
             ?? throw new NotFoundException("Product", request.Id);
 
@@ -226,6 +235,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.Name = request.Name.Trim();
         product.ShortDescription = request.ShortDescription;
         product.Description = request.Description;
+        product.Sku = request.Sku?.Trim();
         product.BasePrice = request.BasePrice;
         product.CompareAtPrice = request.CompareAtPrice;
         product.CostPrice = request.CostPrice;
@@ -237,6 +247,35 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.HsnCode = request.HsnCode;
         product.GstRatePercentage = request.GstRatePercentage;
         product.ModifiedDate = DateTime.UtcNow;
+
+        var defaultVariant = product.Variants.FirstOrDefault(v => v.IsDefault) ?? product.Variants.FirstOrDefault();
+        if (defaultVariant != null)
+        {
+            if (!string.IsNullOrWhiteSpace(request.Sku))
+                defaultVariant.Sku = request.Sku.Trim();
+
+            defaultVariant.DisplayName = string.IsNullOrWhiteSpace(request.PackSize)
+                ? product.Name
+                : $"{product.Name} ({request.PackSize.Trim()})";
+        }
+
+        if (request.ImageUrls != null)
+        {
+            _db.ProductImages.RemoveRange(product.Images);
+            var order = 0;
+            foreach (var url in request.ImageUrls.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url.Trim()).Distinct())
+            {
+                product.Images.Add(new ProductImage
+                {
+                    ProductId = product.Id,
+                    ProductVariantId = defaultVariant?.Id,
+                    Url = url,
+                    DisplayOrder = order,
+                    IsPrimary = order == 0
+                });
+                order++;
+            }
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
 

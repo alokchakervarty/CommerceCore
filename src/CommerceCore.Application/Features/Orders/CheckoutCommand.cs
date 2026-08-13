@@ -115,13 +115,21 @@ public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, OrderDto>
             inventoryByVariant[ci.ProductVariantId] = items;
         }
 
+        var isCashOnDelivery = request.PaymentMethod.Equals("Offline", StringComparison.OrdinalIgnoreCase)
+            || request.PaymentMethod.Equals("COD", StringComparison.OrdinalIgnoreCase)
+            || request.PaymentMethod.Equals("Cash on Delivery", StringComparison.OrdinalIgnoreCase);
+        var isOnlinePayment = request.PaymentMethod.Equals("Razorpay", StringComparison.OrdinalIgnoreCase)
+            || request.PaymentMethod.Equals("Online", StringComparison.OrdinalIgnoreCase);
+
         var order = new Order
         {
             StoreId = _tenant.StoreId,
             OrderNumber = GenerateOrderNumber(),
             CustomerId = customer.Id,
-            Status = OrderStatus.Pending,
-            PaymentStatus = OrderPaymentStatus.Pending,
+            // A COD order awaits collection on delivery; a Razorpay order reaches this
+            // endpoint only after the client-side gateway signature has been verified.
+            Status = OrderStatus.Confirmed,
+            PaymentStatus = isOnlinePayment ? OrderPaymentStatus.Paid : OrderPaymentStatus.Pending,
             PaymentMethod = null, // set below once resolved to a snapshot string
             IsInterStateSupply = isInterState,
 

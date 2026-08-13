@@ -41,6 +41,7 @@ public record ProductDto(
     string Slug,
     string? ShortDescription,
     string? Description,
+    string? Sku,
     decimal BasePrice,
     decimal? CompareAtPrice,
     bool HasVariants,
@@ -63,6 +64,7 @@ public record CreateProductRequest(
     string? ShortDescription,
     string? Description,
     string? Sku,
+    string? PackSize,
     decimal BasePrice,
     decimal? CompareAtPrice,
     decimal? CostPrice,
@@ -79,6 +81,7 @@ public record UpdateProductRequest(
     string Name,
     string? ShortDescription,
     string? Description,
+    string? Sku,
     decimal BasePrice,
     decimal? CompareAtPrice,
     decimal? CostPrice,
@@ -87,6 +90,8 @@ public record UpdateProductRequest(
     bool IsFeatured,
     Guid CategoryId,
     Guid? BrandId,
+    IReadOnlyList<string>? ImageUrls,
+    string? PackSize,
     string? HsnCode,
     decimal? GstRatePercentage);
 
