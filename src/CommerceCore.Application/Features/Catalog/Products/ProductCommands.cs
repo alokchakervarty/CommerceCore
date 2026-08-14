@@ -220,7 +220,6 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
     {
         var product = await _db.Products
             .Include(p => p.Variants)
-            .Include(p => p.Images)
             .FirstOrDefaultAsync(
             p => p.Id == request.Id && p.StoreId == _tenant.StoreId, cancellationToken)
             ?? throw new NotFoundException("Product", request.Id);
@@ -259,13 +258,20 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
                 : $"{product.Name} ({request.PackSize.Trim()})";
         }
 
+        // Handle images separately to avoid concurrency conflicts
         if (request.ImageUrls != null)
         {
-            _db.ProductImages.RemoveRange(product.Images);
+            // Delete old images via DbSet (not through navigation property)
+            var oldImages = await _db.ProductImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToListAsync(cancellationToken);
+            _db.ProductImages.RemoveRange(oldImages);
+
+            // Add new images
             var order = 0;
             foreach (var url in request.ImageUrls.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url.Trim()).Distinct())
             {
-                product.Images.Add(new ProductImage
+                _db.ProductImages.Add(new ProductImage
                 {
                     ProductId = product.Id,
                     ProductVariantId = defaultVariant?.Id,
