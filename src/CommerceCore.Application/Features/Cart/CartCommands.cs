@@ -108,15 +108,16 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, CartRes
         // ---------------------------------------------------------
 
         var existing = await _db.CartItems
-            .FirstOrDefaultAsync(
-                ci =>
-                    ci.ProductVariantId == variant.Id &&
-                    (
-                        owner.CustomerId != null
-                            ? ci.CustomerId == owner.CustomerId
-                            : ci.GuestId == owner.GuestId
-                    ),
-                cancellationToken);
+     .FirstOrDefaultAsync(
+         ci =>
+             !ci.IsDeleted &&
+             ci.ProductVariantId == variant.Id &&
+             (
+                 owner.CustomerId != null
+                     ? ci.CustomerId == owner.CustomerId
+                     : ci.GuestId == owner.GuestId
+             ),
+         cancellationToken);
 
         // ---------------------------------------------------------
         // 4. If item already exists, simply increase quantity
