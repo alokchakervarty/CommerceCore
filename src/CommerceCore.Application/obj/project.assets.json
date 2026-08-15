@@ -259,6 +259,22 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
+      "Npgsql/8.0.3": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "CommerceCore.Contracts/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
@@ -723,6 +739,29 @@
         "useSharedDesignerContext.txt"
       ]
     },
+    "Npgsql/8.0.3": {
+      "sha512": "6WEmzsQJCZAlUG1pThKg/RmeF6V+I0DmBBBE/8YzpRtEzhyZzKcK7ulMANDm5CkxrALBEC8H+5plxHWtIL7xnA==",
+      "type": "package",
+      "path": "npgsql/8.0.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net6.0/Npgsql.dll",
+        "lib/net6.0/Npgsql.xml",
+        "lib/net7.0/Npgsql.dll",
+        "lib/net7.0/Npgsql.xml",
+        "lib/net8.0/Npgsql.dll",
+        "lib/net8.0/Npgsql.xml",
+        "lib/netstandard2.0/Npgsql.dll",
+        "lib/netstandard2.0/Npgsql.xml",
+        "lib/netstandard2.1/Npgsql.dll",
+        "lib/netstandard2.1/Npgsql.xml",
+        "npgsql.8.0.3.nupkg.sha512",
+        "npgsql.nuspec",
+        "postgresql.png"
+      ]
+    },
     "CommerceCore.Contracts/1.0.0": {
       "type": "project",
       "path": "../CommerceCore.Contracts/CommerceCore.Contracts.csproj",
@@ -747,7 +786,8 @@
       "FluentValidation.DependencyInjectionExtensions >= 11.9.2",
       "MediatR >= 12.4.0",
       "Microsoft.EntityFrameworkCore >= 8.0.8",
-      "Microsoft.Extensions.Logging.Abstractions >= 8.0.1"
+      "Microsoft.Extensions.Logging.Abstractions >= 8.0.1",
+      "Npgsql >= 8.0.3"
     ]
   },
   "packageFolders": {
@@ -827,6 +867,10 @@
           "Microsoft.Extensions.Logging.Abstractions": {
             "target": "Package",
             "version": "[8.0.1, )"
+          },
+          "Npgsql": {
+            "target": "Package",
+            "version": "[8.0.3, )"
           }
         },
         "imports": [

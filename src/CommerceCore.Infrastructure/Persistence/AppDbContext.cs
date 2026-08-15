@@ -241,5 +241,10 @@ public class AppDbContext : DbContext, IApplicationDbContext
         };
     }
 
-    public IDbContextTransaction BeginTransaction() => Database.BeginTransaction();
+    //public IDbContextTransaction BeginTransaction() => Database.BeginTransaction();
+    public IDbContextTransaction BeginTransaction(
+    System.Data.IsolationLevel isolationLevel)
+    {
+        return Database.BeginTransaction(isolationLevel);
+    }
 }

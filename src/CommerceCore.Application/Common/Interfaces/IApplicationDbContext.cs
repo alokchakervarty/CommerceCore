@@ -71,5 +71,7 @@ public interface IApplicationDbContext
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
-    Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction BeginTransaction();
+    //Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction BeginTransaction();
+    Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction BeginTransaction(
+    System.Data.IsolationLevel isolationLevel);
 }

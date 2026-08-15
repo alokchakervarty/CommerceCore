@@ -597,7 +597,8 @@
           "FluentValidation.DependencyInjectionExtensions": "11.9.2",
           "MediatR": "12.4.0",
           "Microsoft.EntityFrameworkCore": "8.0.8",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.1"
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.1",
+          "Npgsql": "8.0.3"
         },
         "runtime": {
           "CommerceCore.Application.dll": {

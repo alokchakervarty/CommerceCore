@@ -6,6 +6,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using Npgsql;
 
 namespace CommerceCore.Application.Features.Cart;
 
@@ -66,47 +67,213 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, CartRes
         _tenant = tenant;
     }
 
-    public async Task<CartResponse> Handle(AddToCartCommand request, CancellationToken cancellationToken)
+    public async Task<CartResponse> Handle(
+       AddToCartCommand request,
+       CancellationToken cancellationToken)
     {
-        var owner = await CartOwnerResolver.ResolveAsync(_db, _currentUser, _tenant, cancellationToken);
+        var owner = await CartOwnerResolver.ResolveAsync(
+            _db,
+            _currentUser,
+            _tenant,
+            cancellationToken);
 
-        var variant = await _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == request.ProductVariantId, cancellationToken)
-            ?? throw new NotFoundException("ProductVariant", request.ProductVariantId);
+        // ---------------------------------------------------------
+        // 1. Get product variant
+        // ---------------------------------------------------------
+
+        var variant = await _db.ProductVariants
+            .FirstOrDefaultAsync(
+                v => v.Id == request.ProductVariantId,
+                cancellationToken)
+            ?? throw new NotFoundException(
+                "ProductVariant",
+                request.ProductVariantId);
 
         if (!variant.IsActive)
-            throw new BusinessRuleException("This product is no longer available.");
+            throw new BusinessRuleException(
+                "This product is no longer available.");
+
+        // ---------------------------------------------------------
+        // 2. Check available stock
+        // ---------------------------------------------------------
 
         var availableStock = await _db.InventoryItems
             .Where(i => i.ProductVariantId == variant.Id)
-            .SumAsync(i => (int?)(i.QuantityOnHand - i.QuantityReserved), cancellationToken) ?? 0;
+            .SumAsync(
+                i => (int?)(i.QuantityOnHand - i.QuantityReserved),
+                cancellationToken) ?? 0;
 
-        var existing = await _db.CartItems.FirstOrDefaultAsync(
-            ci => ci.ProductVariantId == variant.Id
-                && (owner.CustomerId != null ? ci.CustomerId == owner.CustomerId : ci.GuestId == owner.GuestId),
-            cancellationToken);
+        // ---------------------------------------------------------
+        // 3. Find existing cart item
+        // ---------------------------------------------------------
 
-        var requestedTotal = (existing?.Quantity ?? 0) + request.Quantity;
-        if (requestedTotal > availableStock)
-            throw new BusinessRuleException($"Only {availableStock} unit(s) of this product are available.");
+        var existing = await _db.CartItems
+            .FirstOrDefaultAsync(
+                ci =>
+                    ci.ProductVariantId == variant.Id &&
+                    (
+                        owner.CustomerId != null
+                            ? ci.CustomerId == owner.CustomerId
+                            : ci.GuestId == owner.GuestId
+                    ),
+                cancellationToken);
+
+        // ---------------------------------------------------------
+        // 4. If item already exists, simply increase quantity
+        // ---------------------------------------------------------
 
         if (existing != null)
         {
-            existing.Quantity = requestedTotal;
-        }
-        else
-        {
-            _db.CartItems.Add(new CartItem
+            var newQuantity = existing.Quantity + request.Quantity;
+
+            if (newQuantity > availableStock)
             {
-                CustomerId = owner.CustomerId,
-                GuestId = owner.GuestId,
-                ProductId = variant.ProductId,
-                ProductVariantId = variant.Id,
-                Quantity = request.Quantity
-            });
+                throw new BusinessRuleException(
+                    $"Only {availableStock} unit(s) of this product are available.");
+            }
+
+            existing.Quantity = newQuantity;
+
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return await CartMapper.ToResponseAsync(
+                _db,
+                owner,
+                cancellationToken);
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
-        return await CartMapper.ToResponseAsync(_db, owner, cancellationToken);
+        // ---------------------------------------------------------
+        // 5. Item doesn't exist.
+        // Create a new cart item.
+        // ---------------------------------------------------------
+
+        if (request.Quantity > availableStock)
+        {
+            throw new BusinessRuleException(
+                $"Only {availableStock} unit(s) of this product are available.");
+        }
+
+        var newItem = new CartItem
+        {
+            CustomerId = owner.CustomerId,
+            GuestId = owner.GuestId,
+            ProductId = variant.ProductId,
+            ProductVariantId = variant.Id,
+            Quantity = request.Quantity
+        };
+
+        _db.CartItems.Add(newItem);
+
+        // ---------------------------------------------------------
+        // 6. Save.
+        //
+        // Another request could have inserted the same
+        // CustomerId + ProductVariantId between our SELECT
+        // and INSERT.
+        // ---------------------------------------------------------
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            // -----------------------------------------------------
+            // Check whether this is the PostgreSQL duplicate-key
+            // error for our cart unique constraint.
+            // -----------------------------------------------------
+
+            var exceptionText = ex.ToString();
+
+            var isDuplicateCartItem =
+                exceptionText.Contains(
+                    "23505",
+                    StringComparison.OrdinalIgnoreCase)
+                &&
+                exceptionText.Contains(
+                    "UQ_CartItems_Customer_Variant",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (!isDuplicateCartItem)
+            {
+                throw;
+            }
+
+            // -----------------------------------------------------
+            // IMPORTANT:
+            //
+            // EF is still tracking newItem as Added.
+            // Remove it from tracking before trying SaveChanges
+            // again.
+            // -----------------------------------------------------
+
+            _db.CartItems.Remove(newItem);
+
+            // -----------------------------------------------------
+            // Find the row that the other request inserted.
+            // -----------------------------------------------------
+
+            existing = await _db.CartItems
+                .FirstOrDefaultAsync(
+                    ci =>
+                        ci.ProductVariantId == variant.Id &&
+                        (
+                            owner.CustomerId != null
+                                ? ci.CustomerId == owner.CustomerId
+                                : ci.GuestId == owner.GuestId
+                        ),
+                    cancellationToken);
+
+            if (existing == null)
+            {
+                throw;
+            }
+
+            // -----------------------------------------------------
+            // The other request may already have added some
+            // quantity.
+            //
+            // Example:
+            //
+            // Request A -> adds 1
+            // Request B -> adds 1 at the same time
+            //
+            // Existing quantity = 1
+            // We add our requested quantity = 1
+            // Final quantity = 2
+            // -----------------------------------------------------
+
+            var finalQuantity =
+                existing.Quantity + request.Quantity;
+
+            if (finalQuantity > availableStock)
+            {
+                throw new BusinessRuleException(
+                    $"Only {availableStock} unit(s) of this product are available.");
+            }
+
+            existing.Quantity = finalQuantity;
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        // ---------------------------------------------------------
+        // 7. Return updated cart
+        // ---------------------------------------------------------
+
+        return await CartMapper.ToResponseAsync(
+            _db,
+            owner,
+            cancellationToken);
+    }
+
+    private static bool IsDuplicateCartItemException(
+    DbUpdateException ex)
+    {
+        return ex.InnerException is PostgresException postgresException
+               && postgresException.SqlState == "23505"
+               && postgresException.ConstraintName
+                   == "UQ_CartItems_Customer_Variant";
     }
 }
 
