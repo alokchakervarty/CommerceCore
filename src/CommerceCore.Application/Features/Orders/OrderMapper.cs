@@ -7,6 +7,9 @@ internal static class OrderMapper
 {
     public static OrderDto ToDto(Order o) => new(
         o.Id,
+        o.Customer?.FullName ?? o.ShippingFullName,
+        o.Customer?.Email ?? string.Empty,
+        o.Customer?.Phone,
         o.OrderNumber,
         o.Status.ToString(),
         o.PaymentStatus.ToString(),

@@ -29,6 +29,7 @@ public class GetMyOrdersQueryHandler : IRequestHandler<GetMyOrdersQuery, PagedRe
         var customer = await CustomerResolver.GetOrCreateForCurrentUserAsync(_db, _currentUser, _tenant, cancellationToken);
 
         var query = _db.Orders
+            .Include(o => o.Customer)
             .Include(o => o.OrderItems)
             .Where(o => o.CustomerId == customer.Id)
             .OrderByDescending(o => o.PlacedAt);
@@ -89,7 +90,10 @@ public class GetAllOrdersQueryHandler : IRequestHandler<GetAllOrdersQuery, Paged
 
     public async Task<PagedResult<OrderDto>> Handle(GetAllOrdersQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.Orders.Include(o => o.OrderItems).Where(o => o.StoreId == _tenant.StoreId);
+        var query = _db.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.OrderItems)
+            .Where(o => o.StoreId == _tenant.StoreId);
 
         if (!string.IsNullOrWhiteSpace(request.Status)
             && Enum.TryParse<Domain.Enums.OrderStatus>(request.Status, true, out var status))

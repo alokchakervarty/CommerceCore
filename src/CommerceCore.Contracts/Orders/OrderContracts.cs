@@ -12,6 +12,9 @@ public record OrderItemDto(
 
 public record OrderDto(
     Guid Id,
+    string CustomerName,
+    string CustomerEmail,
+    string? CustomerPhone,
     string OrderNumber,
     string Status,
     string PaymentStatus,
