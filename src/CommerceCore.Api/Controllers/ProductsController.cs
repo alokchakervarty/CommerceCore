@@ -39,7 +39,7 @@ public class ProductsController : ControllerBase
             request.Name, request.ShortDescription, request.Description, request.Sku,
             request.BasePrice, request.CompareAtPrice, request.CostPrice, request.TrackInventory,
             request.CategoryId, request.BrandId, request.ImageUrls,
-            request.HsnCode, request.GstRatePercentage, request.InitialStock, request.WarehouseId, request.PackSize), cancellationToken);
+            request.HsnCode, request.GstRatePercentage, request.InitialStock, request.WarehouseId, request.PackSize, request.VideoUrl), cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id, version = "1.0" }, result);
     }
@@ -54,7 +54,7 @@ public class ProductsController : ControllerBase
             request.Sku,
             request.BasePrice, request.CompareAtPrice, request.CostPrice, request.TrackInventory,
             request.IsActive, request.IsFeatured, request.CategoryId, request.BrandId,
-            request.ImageUrls, request.PackSize, request.HsnCode, request.GstRatePercentage), cancellationToken);
+            request.ImageUrls, request.PackSize, request.HsnCode, request.GstRatePercentage, request.VideoUrl), cancellationToken);
 
         return Ok(result);
     }

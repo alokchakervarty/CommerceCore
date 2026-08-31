@@ -25,7 +25,8 @@ public record CreateProductCommand(
     decimal? GstRatePercentage,
     int InitialStock = 0,
     Guid? WarehouseId = null,
-    string? PackSize = null) : IRequest<ProductDto>;
+    string? PackSize = null,
+    string? VideoUrl = null) : IRequest<ProductDto>;
 
 public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
 {
@@ -78,6 +79,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             Slug = SlugHelper.Generate(request.Name),
             ShortDescription = request.ShortDescription,
             Description = request.Description,
+            VideoUrl = request.VideoUrl,
             Sku = request.Sku,
             BasePrice = request.BasePrice,
             CompareAtPrice = request.CompareAtPrice,
@@ -193,7 +195,8 @@ public record UpdateProductCommand(
     IReadOnlyList<string>? ImageUrls,
     string? PackSize,
     string? HsnCode,
-    decimal? GstRatePercentage) : IRequest<ProductDto>;
+    decimal? GstRatePercentage,
+    string? VideoUrl = null) : IRequest<ProductDto>;
 
 public class UpdateProductCommandValidator : AbstractValidator<UpdateProductCommand>
 {
@@ -234,6 +237,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.Name = request.Name.Trim();
         product.ShortDescription = request.ShortDescription;
         product.Description = request.Description;
+        product.VideoUrl = request.VideoUrl;
         product.Sku = request.Sku?.Trim();
         product.BasePrice = request.BasePrice;
         product.CompareAtPrice = request.CompareAtPrice;

@@ -88,6 +88,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Sku).HasMaxLength(100);
         builder.Property(p => p.ShortDescription).HasMaxLength(500);
         builder.Property(p => p.Description).HasColumnType("text");
+        builder.Property(p => p.VideoUrl).HasMaxLength(1000);
 
         builder.Property(p => p.BasePrice).HasColumnType("decimal(12,2)");
         builder.Property(p => p.CompareAtPrice).HasColumnType("decimal(12,2)");

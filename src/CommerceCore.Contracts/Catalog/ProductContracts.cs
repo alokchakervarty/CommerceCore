@@ -41,6 +41,7 @@ public record ProductDto(
     string Slug,
     string? ShortDescription,
     string? Description,
+    string? VideoUrl,
     string? Sku,
     decimal BasePrice,
     decimal? CompareAtPrice,
@@ -75,7 +76,8 @@ public record CreateProductRequest(
     string? HsnCode,
     decimal? GstRatePercentage,
     int InitialStock = 0,
-    Guid? WarehouseId = null);
+    Guid? WarehouseId = null,
+    string? VideoUrl = null);
 
 public record UpdateProductRequest(
     string Name,
@@ -93,7 +95,8 @@ public record UpdateProductRequest(
     IReadOnlyList<string>? ImageUrls,
     string? PackSize,
     string? HsnCode,
-    decimal? GstRatePercentage);
+    decimal? GstRatePercentage,
+    string? VideoUrl = null);
 
 public record ProductListQuery
 {

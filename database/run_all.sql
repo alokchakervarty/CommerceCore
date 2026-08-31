@@ -9,4 +9,5 @@
 \i 06_cms.sql
 \i 07_reference.sql
 \i 08_media_notifications_system.sql
+\i 09_product_video.sql
 \i 99_seed_data.sql

@@ -65,6 +65,7 @@ CREATE TABLE "Products" (
     "Slug" VARCHAR(300) NOT NULL,
     "ShortDescription" VARCHAR(500) NULL,
     "Description" TEXT NULL,
+    "VideoUrl" VARCHAR(1000) NULL,
     "Sku" VARCHAR(100) NULL,
     "BasePrice" DECIMAL(12,2) NOT NULL,
     "CompareAtPrice" DECIMAL(12,2) NULL,

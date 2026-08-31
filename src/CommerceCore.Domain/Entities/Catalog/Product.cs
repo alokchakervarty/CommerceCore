@@ -18,6 +18,7 @@ public class Product : BaseEntity, IStoreScoped
     public string Slug { get; set; } = string.Empty;
     public string? ShortDescription { get; set; }
     public string? Description { get; set; }
+    public string? VideoUrl { get; set; }
 
     /// <summary>Base SKU. If the product has variants, each variant carries its own SKU
     /// and this becomes a parent/reference SKU rather than a purchasable one.</summary>
