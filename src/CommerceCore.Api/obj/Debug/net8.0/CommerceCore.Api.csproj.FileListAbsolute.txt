@@ -187,3 +187,4 @@ C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\bi
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\bin\Debug\net8.0\runtimes\osx-x64\native\libQuestPdfSkia.dylib
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\bin\Debug\net8.0\runtimes\win-x64\native\QuestPdfSkia.dll
 C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\bin\Debug\net8.0\runtimes\win-x86\native\QuestPdfSkia.dll
+C:\Users\alokc\source\repos\alokchakervarty\CommerceCore\src\CommerceCore.Api\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

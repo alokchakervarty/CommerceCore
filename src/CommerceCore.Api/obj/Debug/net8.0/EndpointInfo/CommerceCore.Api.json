@@ -9290,6 +9290,10 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -10937,6 +10941,18 @@
             "type": "string",
             "format": "uuid"
           },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
+            "type": "string",
+            "nullable": true
+          },
           "orderNumber": {
             "type": "string",
             "nullable": true
@@ -11512,6 +11528,10 @@
             "type": "string",
             "nullable": true
           },
+          "videoUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "sku": {
             "type": "string",
             "nullable": true
@@ -11769,6 +11789,10 @@
             "nullable": true
           },
           "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "videoUrl": {
             "type": "string",
             "nullable": true
           },
@@ -13331,6 +13355,10 @@
           "gstRatePercentage": {
             "type": "number",
             "format": "double",
+            "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
             "nullable": true
           }
         },
