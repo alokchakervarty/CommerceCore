@@ -29,10 +29,19 @@ public static class GenericCrud<TEntity> where TEntity : BaseEntity
     public class CreateHandler : IRequestHandler<Create, TEntity>
     {
         private readonly IUnitOfWork _uow;
-        public CreateHandler(IUnitOfWork uow) => _uow = uow;
+        private readonly ICurrentTenantService _currentTenantService;
+
+        public CreateHandler(IUnitOfWork uow, ICurrentTenantService currentTenantService)
+        {
+            _uow = uow;
+            _currentTenantService = currentTenantService;
+        }
 
         public async Task<TEntity> Handle(Create request, CancellationToken cancellationToken)
         {
+            if (request.Entity is IStoreScoped storeScoped)
+                storeScoped.StoreId = _currentTenantService.StoreId;
+
             await _uow.Repository<TEntity>().AddAsync(request.Entity, cancellationToken);
             await _uow.SaveChangesAsync(cancellationToken);
             return request.Entity;
